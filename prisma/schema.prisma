@@ -1,0 +1,366 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_CNN")
+}
+
+model UsersClient {
+  uid          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String   @default("Aliado")
+  numberPhone  String?  @default("0")
+  email        String?  @default("default@example.com")
+  status       Boolean  @default(true)
+  google       Boolean  @default(false)
+  img          String?
+  googleUserId String?
+  created      DateTime @default(now())
+
+  userLevels         UserLevel[]           @relation("UserClientLevels")
+  commentsClient     CommentsClient[]      @relation("UserClientComment")
+  trip               Trip[]                @relation("UserClientTrip")
+  discountCode       DiscountCode[]        @relation("UserClientCode")
+  favoritePlace      FavoritePlace[]       @relation("UserClientFavoritePlace")
+  scheduledTrip      ScheduledTrip[]       @relation("UserClientScheduledTrip")
+  reportClient       ReportClient[]        @relation("UserClientReport")
+  historyTripsClient HistoryTripsClient[]  @relation("UserClientHistoryTrip")
+  paymentMethod      PaymentMethod[]       @relation("UserClientPaymentMethod")
+  Notifications      NotificationsClient[] @relation("UserClientNotification")
+
+  @@map("usersClient")
+}
+
+model UserLevel {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientLevels", fields: [usersClientId], references: [uid])
+  tripsCount    Int         @default(0)
+  driverScore   Float       @default(0)
+  level         String      @default("Bronce")
+  updatedAt     DateTime    @updatedAt
+
+  @@index([usersClientId])
+  @@map("userLevels")
+}
+
+model UsersDriver {
+  uid         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @default("Aliado")
+  lastName    String
+  numberPhone Int      @default(0)
+  email       String
+  status      Boolean  @default(true)
+  google      Boolean  @default(false)
+  img         String
+  created     DateTime @default(now())
+
+  driverLevels       DriversLevel[]        @relation("UserDriverLevels")
+  vehicle            Vehicles[]            @relation("VehicleDriver")
+  commentsDriver     CommentsDriver[]      @relation("UserDriverComment")
+  trip               Trip[]                @relation("UserDriverTrip")
+  reportDriver       ReportDriver[]        @relation("UserDriverReport")
+  historyTripsDriver HistoryTripsDriver[]  @relation("UserDriverHistoryTrip")
+  notifications      NotificationsDriver[] @relation("UserDriverNotification")
+  shipment           Shipment[]            @relation("UserDriverShipment")
+
+  @@map("usersDriver")
+}
+
+model DriversLevel {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId String      @db.ObjectId
+  usersDriver   UsersDriver @relation("UserDriverLevels", fields: [usersDriverId], references: [uid])
+  tripsCount    Int         @default(0)
+  clientScore   Float       @default(0)
+  level         String      @default("Bronce")
+  updatedAt     DateTime    @updatedAt
+
+  @@index([usersDriverId])
+  @@map("driversLevels")
+}
+
+model Vehicles {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId String      @db.ObjectId
+  usersDriver   UsersDriver @relation("VehicleDriver", fields: [usersDriverId], references: [uid])
+  register      String
+  model         String
+  brand         String
+  year          Int         @default(0)
+  color         String
+  cargo         Boolean     @default(false)
+  shipment      Boolean     @default(false)
+
+  @@index([usersDriverId])
+  @@map("vehicles")
+}
+
+model CommentsClient {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientComment", fields: [usersClientId], references: [uid])
+  comment       String
+
+  @@index([usersClientId])
+  @@map("commentsClient")
+}
+
+model CommentsDriver {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId String      @db.ObjectId
+  usersDriver   UsersDriver @relation("UserDriverComment", fields: [usersDriverId], references: [uid])
+  comment       String
+
+  @@index([usersDriverId])
+  @@map("commentsDriver")
+}
+
+model Trip {
+  uid            String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId  String      @db.ObjectId
+  usersClient    UsersClient @relation("UserClientTrip", fields: [usersClientId], references: [uid])
+  usersDriverId  String      @db.ObjectId
+  usersDriver    UsersDriver @relation("UserDriverTrip", fields: [usersDriverId], references: [uid])
+  complete       Boolean     @default(false)
+  paid           Boolean     @default(false)
+  price          Float       @default(0)
+  paymentMethod  String
+  kilometers     Float       @default(0)
+  latitudeStart  Float       @default(0)
+  longitudeStart Float       @default(0)
+  latitudeEnd    Float       @default(0)
+  longitudeEnd   Float       @default(0)
+  addressStart   String
+  addressEnd     String
+  hourStart      String
+  hourEnd        String
+  discountCode   String?
+  status         Boolean     @default(true)
+  created        DateTime    @default(now())
+
+  @@index([usersDriverId, usersClientId])
+  @@map("trip")
+}
+
+model DiscountCode {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientCode", fields: [usersClientId], references: [uid])
+  code          String
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("discountCode")
+}
+
+model EnableCode {
+  uid         String   @id @default(auto()) @map("_id") @db.ObjectId
+  code        String
+  enableLevel String
+  status      Boolean  @default(true)
+  created     DateTime @default(now())
+
+  @@map("enbaleCode")
+}
+
+model FavoritePlace {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientFavoritePlace", fields: [usersClientId], references: [uid])
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("favoritePlace")
+}
+
+model ScheduledTrip {
+  uid            String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId  String      @db.ObjectId
+  usersClient    UsersClient @relation("UserClientScheduledTrip", fields: [usersClientId], references: [uid])
+  price          Float       @default(0)
+  paymentMethod  String
+  kilometers     Float       @default(0)
+  latitudeStart  Float       @default(0)
+  longitudeStart Float       @default(0)
+  latitudeEnd    Float       @default(0)
+  longitudeEnd   Float       @default(0)
+  addressStart   String
+  addressEnd     String
+  dateScheduled  String
+  hourScheduled  String
+  discountCode   String?
+  status         Boolean     @default(true)
+  created        DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("scheduledTrip")
+}
+
+model ReportClient {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientReport", fields: [usersClientId], references: [uid])
+  comment       String
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("reportClient")
+}
+
+model ReportDriver {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId String      @db.ObjectId
+  usersDriver   UsersDriver @relation("UserDriverReport", fields: [usersDriverId], references: [uid])
+  comment       String
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersDriverId])
+  @@map("reportDriver")
+}
+
+model HistoryTripsClient {
+  uid            String      @id @default(auto()) @map("_id") @db.ObjectId
+  tripId         String      @db.ObjectId
+  usersClientId  String      @db.ObjectId
+  usersClient    UsersClient @relation("UserClientHistoryTrip", fields: [usersClientId], references: [uid])
+  driverId       String      @db.ObjectId
+  driverName     String
+  complete       Boolean     @default(true)
+  paid           Boolean     @default(true)
+  price          Float       @default(0)
+  paymentMethod  String
+  kilometers     Float       @default(0)
+  latitudeStart  Float       @default(0)
+  longitudeStart Float       @default(0)
+  latitudeEnd    Float       @default(0)
+  longitudeEnd   Float       @default(0)
+  addressStart   String
+  addressEnd     String
+  hourStart      String
+  hourEnd        String
+  discountCode   String?
+  created        DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("historyTripsClient")
+}
+
+model HistoryTripsDriver {
+  uid            String      @id @default(auto()) @map("_id") @db.ObjectId
+  tripId         String      @db.ObjectId
+  usersDriverId  String      @db.ObjectId
+  usersDriver    UsersDriver @relation("UserDriverHistoryTrip", fields: [usersDriverId], references: [uid])
+  clientId       String      @db.ObjectId
+  clientName     String
+  complete       Boolean     @default(true)
+  paid           Boolean     @default(true)
+  price          Float       @default(0)
+  paymentMethod  String
+  kilometers     Float       @default(0)
+  latitudeStart  Float       @default(0)
+  longitudeStart Float       @default(0)
+  latitudeEnd    Float       @default(0)
+  longitudeEnd   Float       @default(0)
+  addressStart   String
+  addressEnd     String
+  hourStart      String
+  hourEnd        String
+  discountCode   String?
+  created        DateTime    @default(now())
+
+  @@index([usersDriverId])
+  @@map("historyTripsDriver")
+}
+
+model PaymentMethod {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientPaymentMethod", fields: [usersClientId], references: [uid])
+  cardToken     String
+  last4Digits   String
+  updatedAt     DateTime    @updatedAt
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("paymentMethod")
+}
+
+model NotificationsClient {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientNotification", fields: [usersClientId], references: [uid])
+  notification  String
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("notificationsClient")
+}
+
+model NotificationsDriver {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId String      @db.ObjectId
+  usersDriver   UsersDriver @relation("UserDriverNotification", fields: [usersDriverId], references: [uid])
+  notification  String
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersDriverId])
+  @@map("notificationsDriver")
+}
+
+model Shipment {
+  uid               String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId     String      @db.ObjectId
+  usersDriver       UsersDriver @relation("UserDriverShipment", fields: [usersDriverId], references: [uid])
+  shipmentNumber    String      @unique
+  statusDelivery    String      @default("Pending")
+  deliveryAddress   String
+  pickupAddress     String
+  trackingNumber    String?
+  estimatedDelivery DateTime?
+  status            Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  items           ShipmentItem[]
+  ShipmentHistory ShipmentHistory[] @relation("Shipment")
+
+  @@index([usersDriverId])
+  @@map("shipments")
+}
+
+model ShipmentItem {
+  uid         String   @id @default(auto()) @map("_id") @db.ObjectId
+  shipmentId  String   @db.ObjectId
+  shipment    Shipment @relation(fields: [shipmentId], references: [uid])
+  description String
+  quantity    Int
+  weight      Float
+  dimensions  String?
+
+  @@index([shipmentId])
+  @@map("shipmentItems")
+}
+
+model ShipmentHistory {
+  uid             String   @id @default(auto()) @map("_id") @db.ObjectId
+  shipmentId      String   @db.ObjectId
+  shipment        Shipment @relation("Shipment", fields: [shipmentId], references: [uid])
+  statusDelivery  String
+  deliveryAddress String?
+  pickupAddress   String?
+  trackingNumber  String?
+  updatedAt       DateTime @default(now())
+  note            String?
+
+  @@index([shipmentId])
+  @@map("shipmentHistories")
+}
