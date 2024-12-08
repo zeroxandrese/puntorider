@@ -32,7 +32,7 @@ const verifyToken = async (token = ''): Promise<any | null> => {
       throw new Error('No se encontró SECRETORPRIVATEKEY en el archivo .env');
     }
     const decoded = jwt.verify(token, process.env.SECRETORPRIVATEKEY) as JwtPayload;
-    const usuario = await prisma.user.findUnique({ where:{ id: decoded.id }});
+    const usuario = await prisma.usersClient.findUnique({ where:{ uid: decoded.id }});
 
     return usuario
   } catch (error) {

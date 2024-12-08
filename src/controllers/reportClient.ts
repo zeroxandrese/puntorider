@@ -1,16 +1,24 @@
 import { Request, Response } from "express";
-import { countReportsService } from '../services/reports';
+import { reportClientService } from "../services/reportClientService";
 
-const reportClientController = async (req: Request, res: Response) => {
-
+const reportClientPostController = async (req: any, res: Response) => {
+    const { uid } = req.userAuth;
+    const { comment } = req.body;
+    
     try {
-        const responseCountReports = await countReportsService();
+        if (!uid || uid === "") {
+            res.status(401).json({
+                msg: "Información faltante"
+            });
+        }
 
-        res.status(201).json(responseCountReports)
+        const responseReportClient = await reportClientService({ id: uid, comment });
+
+        res.status(201).json(responseReportClient)
 
     } catch (error) {
         throw new Error("Problemas con el registro, comunicate con el admin");
     }
 };
 
-export { reportClientController };
+export { reportClientPostController };

@@ -1,10 +1,18 @@
 import { Request, Response } from "express";
-import { countReportsService } from '../services/reports';
+import { reportDriverService } from '../services/reportDriverService';
 
-const reportDriverController = async (req: Request, res: Response) => {
+const reportDriverController = async (req: any, res: Response) => {
+    const { uid } = req.userAuth;
+    const { comment } = req.body;
 
     try {
-        const responseCountReports = await countReportsService();
+        if (!uid || uid === "") {
+            res.status(401).json({
+                msg: "Información faltante"
+            });
+        }
+
+        const responseCountReports = await reportDriverService({ comment, id: uid });
 
         res.status(201).json(responseCountReports)
 

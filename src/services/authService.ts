@@ -1,15 +1,17 @@
-import { response, request } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { PrismaClient } from '@prisma/client';
 import CryptoJS from 'crypto-js';
 
-import { UIDObject } from '../interface/interface'
+import { UIDObject, PropsLogin } from '../interface/interface'
 
 import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { generateJwt } from '../helpers/generate-jwt';
-import { string } from 'zod';
+
+interface Props {
+    googleToken: string
+}
 
 const decryptData = (encryptedPhone: string) => {
     const bytes = CryptoJS.AES.decrypt(encryptedPhone, process.env.secretKeyCrypto!);
@@ -42,9 +44,7 @@ const verifyToken = async ({ uid }: UIDObject) => {
 };
 
 
-const login = async (req: any, res = response) => {
-
-    const { numberPhone } = req.body;
+const login = async ({ numberPhone }: PropsLogin) => {
 
     try {
         const phoneEncrypt = encryptData(numberPhone)
@@ -54,16 +54,12 @@ const login = async (req: any, res = response) => {
         });
 
         if (!userResponse) {
-            return res.status(400).json({
-                msg: 'The user is incorrect'
-            });
+            throw new Error("The user is incorrect")
         }
 
         //Validacion usuario activo
         if (!userResponse.status) {
-            return res.status(400).json({
-                msg: 'User disable'
-            });
+            throw new Error("User disable")
         }
 
         //Generar JWT
@@ -80,20 +76,18 @@ const login = async (req: any, res = response) => {
 
         const user = { ...userResponse, email, numberPhone: phone };
 
-        res.json({
+        return {
             user,
             token
-        });
+        };
 
 
     } catch (err) {
-        res.status(500).json({
-            msg: 'Algo salio mal, contacte con el administrador'
-        })
+        throw new Error('Algo salio mal, contacte con el administrador');
     }
 };
 
-const googleLogin = async ({ googleToken }: string) => {
+const googleLogin = async ({ googleToken }: Props) => {
 
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
 
@@ -108,15 +102,11 @@ const googleLogin = async ({ googleToken }: string) => {
         const payload = ticket.getPayload();
 
         if (!payload) {
-            return res.status(500).json({
-                msg: 'Error please contact the admin'
-            });
+            throw new Error('Error contacte al admin')
         }
 
         if (!payload.email) {
-            return res.status(500).json({
-                msg: 'Payload without email'
-            });
+            throw new Error('Error con el email')
         }
 
         const googleUserId = payload.sub;
@@ -143,14 +133,13 @@ const googleLogin = async ({ googleToken }: string) => {
         const userId = user.uid.toString();
         const token = await generateJwt(userId);
 
-        res.json({
+        return {
             user,
             token
-        });
+        };
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: 'Error en el servidor' });
+        throw new Error('Algo salio mal, contacte con el administrador');
     }
 };
 

@@ -9,11 +9,11 @@ const dbConection = async (): Promise<void> =>{
             mongoose.set('strictQuery', true);
             await mongoose.connect(process.env.MONGODB_CNN!);
             conectionDB = true
-            console.log('Conectado a la DB desde Server transportia hijo😎');
+            console.log('Conectado a la DB desde Server PuntoRide hijo😎');
         }
     } catch (error) {
         console.log("Error detallado:", error);
-        throw new Error("Error al iniciar la conexion con la DB2 desde Server transportia");
+        throw new Error("Error al iniciar la conexion con la DB2 desde Server PuntoRide");
         
     }
 

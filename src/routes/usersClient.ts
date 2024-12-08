@@ -7,7 +7,7 @@ import validarJWT from "../middelware/validar-jwt";
 
 const router = Router();
 
-router.post("/", validarCampos, usersClientPostController);
+router.post("/", validarJWT, validarCampos, usersClientPostController);
 
 router.put("/", [
     validarJWT,

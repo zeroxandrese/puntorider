@@ -1,9 +1,11 @@
 import { Router } from "express";
-import { validarJWT } from "../middelware/validar-jwt";
-import { countReportsController } from '../controllers/reportClient';
+
+import { reportClientPostController } from "../controllers/reportClient";
+import { validarCampos } from "../middelware/validar-campos";
+import validarJWT from "../middelware/validar-jwt";
 
 const router = Router();
 
-router.get('/', validarJWT, countReportsController);
+router.post("/", validarJWT, validarCampos, reportClientPostController);
 
-export { router }; 
+export { router };

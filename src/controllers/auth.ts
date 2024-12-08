@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
+
 import { verifyToken } from "../services/authService";
+import { googleLogin, login } from "../services/authService";
 
 const verifyTokenController = async (req: any, res: Response) => {
     const uid = req.userAuth;
@@ -18,8 +20,7 @@ const verifyTokenController = async (req: any, res: Response) => {
 
 };
 
-const googleLoginController = async (req: any, res: Response) => {
-    const { uid } = req.userAuth;
+const googleLoginController = async (req: Request, res: Response) => {
     const { googleToken } = req.body
 
     try {
@@ -30,7 +31,7 @@ const googleLoginController = async (req: any, res: Response) => {
 
         };
 
-        const responseUser = await usersClientPutService({ googleToken, uid });
+        const responseUser = await googleLogin({ googleToken });
 
         res.status(201).json(responseUser)
 
@@ -42,19 +43,18 @@ const googleLoginController = async (req: any, res: Response) => {
 
 };
 
-const loginController = async (req: any, res: Response) => {
-    const { uid } = req.userAuth;
-    const { numberPhone, name, email } = req.body
+const loginController = async (req: Request, res: Response) => {
+    const { numberPhone } = req.body
 
     try {
-        if (!numberPhone || numberPhone === "" || !name || name === "" || !email || email === "") {
+        if (!numberPhone || numberPhone === "" ) {
             res.status(401).json({
                 msg: "Información faltante"
             });
 
         };
 
-        const responseUser = await usersClientPutService({ numberPhone, name, email, uid });
+        const responseUser = await login({ numberPhone });
 
         res.status(201).json(responseUser)
 
