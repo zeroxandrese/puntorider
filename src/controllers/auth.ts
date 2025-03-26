@@ -7,6 +7,12 @@ const verifyTokenController = async (req: any, res: Response) => {
     const uid = req.userAuth;
 
     try {
+        if (!uid) {
+            res.status(401).json({
+                msg: "Información faltante"
+            });
+
+        };
 
         const responseUser = await verifyToken({ uid });
 
@@ -14,7 +20,7 @@ const verifyTokenController = async (req: any, res: Response) => {
 
     } catch (error) {
         res.sendStatus(501)
-        throw new Error("Problemas con el registro, comunicate con el admin");
+        console.error("Problemas con el registro, comunicate con el admin");
 
     }
 

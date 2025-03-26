@@ -32,8 +32,8 @@ export interface JwtPayload {
 };
 
 export interface UserClient {
-    uid: String,
-    name: String,
+    uid: string,
+    name: string,
     numberPhone: string,
     email: string,
     status: boolean,
@@ -98,33 +98,10 @@ export interface CommentsClient {
     usersClientId: string; // ID del usuario cliente
     tripId: string; // ID del viaje
     comment: string; // Texto del comentario
-    usersClient?: UsersClient; // Relación con UsersClient (opcional si no siempre se incluye)
+    usersClient?: UserClient; // Relación con UsersClient (opcional si no siempre se incluye)
     trip?: TripPost; // Relación con Trip (opcional si no siempre se incluye)
   }
 
-  export interface UsersClient {
-    uid: string; // Identificador único del usuario cliente
-    name: string; // Nombre del cliente
-    numberPhone?: string; // Número de teléfono (opcional)
-    email?: string; // Correo electrónico (opcional)
-    status: boolean; // Estado del cliente (activo/inactivo)
-    google: boolean; // Indica si se registró con Google
-    img?: string; // URL de la imagen del cliente (opcional)
-    googleUserId?: string; // ID del usuario de Google (opcional)
-    created: Date; // Fecha de creación
-  
-    // Relaciones
-    //userLevels?: UserLevel[]; // Niveles del usuario
-    //commentsClient?: CommentsClient[]; // Comentarios del cliente
-    //trip?: Trip[]; // Viajes asociados al cliente
-    //discountCode?: DiscountCode[]; // Códigos de descuento del cliente
-    //favoritePlace?: FavoritePlace[]; // Lugares favoritos del cliente
-    //scheduledTrip?: ScheduledTrip[]; // Viajes programados del cliente
-    //reportClient?: ReportClient[]; // Reportes relacionados con el cliente
-    //historyTripsClient?: HistoryTripsClient[]; // Historial de viajes del cliente
-    //paymentMethod?: PaymentMethod[]; // Métodos de pago del cliente
-    //notifications?: NotificationsClient[]; // Notificaciones asociadas al cliente
-  }
 
   export interface TripPost {
     uid?: string; // Identificador único del viaje
@@ -161,7 +138,7 @@ export interface CommentsClient {
     longitudeEnd: string;
     discountCode: string;
     paymentMethod: string;
-    uid: string;
+    uid: UserClient;
   }
 
   export interface discountCodePostProps {
@@ -195,4 +172,45 @@ export interface CommentsClient {
     id: string,
     comment: string 
 }
+
+export interface referredCodeProps {
+  id: string,
+  code: string,
+  idreferenced: string
+}
+
+export interface calculationEstimatedArrivalProps {
+  latitude: number,
+  longitude: number,
+  driverId: string
+}
+
+export interface shipmentPostProps {
+  latitudeStart: number,
+  longitudeStart: number,
+  latitudeEnd: number,
+  longitudeEnd: number,
+  usersDriverId: string
+}
+
+export interface shipmentPutProps {
+  latitudeStart: number,
+  longitudeStart: number,
+  latitudeEnd: number,
+  longitudeEnd: number,
+  usersDriverId: string,
+  statusDelivery?: string,
+  id: string,
+  note: string
+}
+
+export interface phoneNumberProps {
+  phoneNumber: number,
+}
+
+export interface validationCodeProps {
+  code: string,
+  codeSecurity: string,
+}
+
 

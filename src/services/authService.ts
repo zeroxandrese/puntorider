@@ -31,12 +31,17 @@ const verifyToken = async ({ uid }: UIDObject) => {
             throw new Error('El token no se ha validado');
         }
 
-        const email = decryptData(uid.email)
+        const emailDescrypt = decryptData(uid.email)
         const phone = decryptData(uid.numberPhone)
         
-        const user = { ...uid, email, numberPhone: phone };
+        const user = { ...uid, email: emailDescrypt, numberPhone: phone };
 
-        return user
+        const token = await generateJwt(uid.uid);
+
+        return {
+            user,
+            token
+        };
 
     } catch (error) {
         throw new Error('Algo salio mal, contacte con el administrador')
@@ -92,7 +97,7 @@ const googleLogin = async ({ googleToken }: Props) => {
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
 
     try {
-        // Verificar el token de Google usando la librería google-auth-library
+
         const client = new OAuth2Client(googleClientId);
         const ticket = await client.verifyIdToken({
             idToken: googleToken,
@@ -111,12 +116,12 @@ const googleLogin = async ({ googleToken }: Props) => {
 
         const googleUserId = payload.sub;
         const emailEncryptData = encryptData(payload.email)
-        // Verificar si el usuario ya está registrado en tu base de datos
+
         let user = await prisma.usersClient.findFirst({
             where: { email: emailEncryptData }
         });
 
-        // Creación del usuario si no existe
+
         if (!user) {
             const { name, picture } = payload;
             user = await prisma.usersClient.create({

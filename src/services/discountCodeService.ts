@@ -49,7 +49,7 @@ const discountCodePutService = async ({ code, usersClientId, percentage, id }: d
     try {
 
         if (!id) {
-            throw new Error("El UID es obligatorio para actualizar un codigo.");
+           console.error("El UID es obligatorio para actualizar un codigo.");
         }
 
        const discountCodeResponseService = await prisma.discountCode.update({

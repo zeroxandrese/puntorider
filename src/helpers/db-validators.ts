@@ -118,7 +118,7 @@ const findIdFavoritePlace = async (id = "") => {
 
 const findScheduledTrip = async (id = "") => {
 
-    const validated = emailSchema.parse(id);
+    const validated = idSchema.parse(id);
     const missingId = await prisma.scheduledTrip.findFirst({ where: { uid: validated } });
     if (missingId) {
         throw new Error('El uid se encuentra registado');
@@ -127,7 +127,7 @@ const findScheduledTrip = async (id = "") => {
 
 const findTrip = async (id = "") => {
 
-    const validated = emailSchema.parse(id);
+    const validated = idSchema.parse(id);
     const missingId = await prisma.trip.findFirst({ where: { uid: validated } });
     if (missingId) {
         throw new Error('El uid se encuentra registado');
@@ -136,7 +136,7 @@ const findTrip = async (id = "") => {
 
 const findNotificationsDriver = async (id = "") => {
 
-    const validated = emailSchema.parse(id);
+    const validated = idSchema.parse(id);
     const missingId = await prisma.notificationsDriver.findFirst({ where: { uid: validated } });
     if (missingId) {
         throw new Error('El uid se encuentra registado');
@@ -145,8 +145,17 @@ const findNotificationsDriver = async (id = "") => {
 
 const findNotificationsClient = async (id = "") => {
 
-    const validated = emailSchema.parse(id);
+    const validated = idSchema.parse(id);
     const missingId = await prisma.notificationsClient.findFirst({ where: { uid: validated } });
+    if (missingId) {
+        throw new Error('El uid se encuentra registado');
+    }
+};
+
+const findShipment = async (id = "") => {
+
+    const validated = idSchema.parse(id);
+    const missingId = await prisma.shipment.findFirst({ where: { uid: validated } });
     if (missingId) {
         throw new Error('El uid se encuentra registado');
     }
@@ -168,5 +177,6 @@ export {
     findScheduledTrip,
     findTrip,
     findNotificationsDriver,
-    findNotificationsClient
+    findNotificationsClient,
+    findShipment
 }

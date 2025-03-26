@@ -17,4 +17,4 @@ router.put('/:id', [
 
 
 
-export default router;
+export { router };

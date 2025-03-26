@@ -10,13 +10,13 @@ const tripGetService = async ({ id }: genericIdProps) => {
 
     try {
 
-       const scheduledTripResponseService = await prisma.scheduledTrip.findMany({ where: { usersClientId: id, status: true } });
+        const scheduledTripResponseService = await prisma.scheduledTrip.findMany({ where: { usersClientId: id, status: true } });
 
         return scheduledTripResponseService
 
     } catch (err) {
         throw new Error("Error en el servicio del viaje programado");
-        
+
     }
 };
 
@@ -43,16 +43,31 @@ const tripPostService = async ({
             })
         );
 
-        // Calcular las distancias con driver
-        const distances = positions.map((driver) => {
-            const distance = calculateDistance(
-                tripDataFind.latitudeStart,
-                tripDataFind.longitudeStart,
-                driver.position.latitude,
-                driver.position.longitude
-            );
-            return { driver: driver.userId, distance };
-        });
+        // Verificar si hay conductores disponibles
+        if (positions.length === 0) {
+            throw new Error("No hay conductores disponibles cerca.");
+        }
+
+        // Calcular las distancias con los conductores
+        const distances = await Promise.all(
+            positions.map(async (driver) => {
+                const { distance } = await calculateDistance(
+                    tripDataFind.latitudeStart,
+                    tripDataFind.longitudeStart,
+                    driver.position.latitude,
+                    driver.position.longitude
+                );
+                return { driver: driver.userId, distance };
+            })
+        );
+
+        //  Conductores dentro del rango
+        const reasonableDistance = 12; // en kilómetros
+        const driversInRange = distances.filter(driver => driver.distance <= reasonableDistance);
+
+        if (driversInRange.length === 0) {
+            throw new Error("No hay conductores disponibles dentro de tu zona.");
+        }
 
         // Driver mas cercano
         const closestDriver = distances.reduce((prev, current) => (prev.distance < current.distance ? prev : current));
@@ -60,7 +75,7 @@ const tripPostService = async ({
         const tripResponseService = await prisma.trip.create({
             data: {
                 usersClientId: tripDataFind.usersClientId,
-                usersDriverId: closestDriver.driver, 
+                usersDriverId: closestDriver.driver,
                 price: tripDataFind.price,
                 basePrice: tripDataFind.basePrice,
                 paymentMethod: tripDataFind.paymentMethod,
@@ -95,14 +110,72 @@ const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProp
             throw new Error("El UID es obligatorio para generar un viaje.");
         }
 
-        const tripResponseService = await prisma.trip.update({
+        const existingTrip = await prisma.trip.findUnique({
             where: { uid: id },
-            data: {
-                complete,
-                paid,
-                cancelForUser
+        });
+
+        if (!existingTrip) {
+            throw new Error("El viaje no existe.");
+        }
+
+        const tripResponseService = await prisma.$transaction(async (prisma) => {
+
+            const updatedTrip = await prisma.trip.update({
+                where: { uid: id },
+                data: {
+                    complete,
+                    paid,
+                    cancelForUser
+                }
+            });
+
+            if (complete) {
+
+                await prisma.historyTripsClient.create({
+                    data: {
+                        usersClientId: updatedTrip.usersClientId,
+                        tripId: updatedTrip.uid,
+                        price: updatedTrip.price,
+                        basePrice: updatedTrip.basePrice,
+                        paymentMethod: updatedTrip.paymentMethod,
+                        kilometers: updatedTrip.kilometers,
+                        latitudeStart: updatedTrip.latitudeStart,
+                        longitudeStart: updatedTrip.longitudeStart,
+                        latitudeEnd: updatedTrip.latitudeEnd,
+                        longitudeEnd: updatedTrip.longitudeEnd,
+                        addressStart: updatedTrip.addressStart,
+                        addressEnd: updatedTrip.addressEnd,
+                        hourStart: updatedTrip.hourStart,
+                        hourEnd: updatedTrip.hourEnd,
+                        discountCode: updatedTrip.discountCode,
+                        discountApplied: updatedTrip.discountApplied
+                    }
+                });
+
+                await prisma.historyTripsDriver.create({
+                    data: {
+                        usersDriverId: updatedTrip.usersDriverId,
+                        tripId: updatedTrip.uid,
+                        price: updatedTrip.price,
+                        basePrice: updatedTrip.basePrice,
+                        paymentMethod: updatedTrip.paymentMethod,
+                        kilometers: updatedTrip.kilometers,
+                        latitudeStart: updatedTrip.latitudeStart,
+                        longitudeStart: updatedTrip.longitudeStart,
+                        latitudeEnd: updatedTrip.latitudeEnd,
+                        longitudeEnd: updatedTrip.longitudeEnd,
+                        addressStart: updatedTrip.addressStart,
+                        addressEnd: updatedTrip.addressEnd,
+                        hourStart: updatedTrip.hourStart,
+                        hourEnd: updatedTrip.hourEnd,
+                        discountCode: updatedTrip.discountCode,
+                        discountApplied: updatedTrip.discountApplied
+                    }
+                });
+
+                return updatedTrip;
             }
-        })
+        });
 
         return tripResponseService
 

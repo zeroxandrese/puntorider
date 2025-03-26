@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
+import { generateJwt } from '../helpers/generate-jwt';
 import { UserClientCreate, UserClientUpdate, UserClientUID } from '../interface/interface'
 
 const prisma = new PrismaClient
@@ -35,7 +36,12 @@ const usersClientPostService = async ({ numberPhone }: UserClientCreate) => {
 
         const user = { ...userResponseService, numberPhone: phone };
 
-        return user
+        const token = await generateJwt(user.uid);
+
+        return ({
+            user,
+            token
+        })
 
     } catch (err) {
         throw new Error("Error en el servicio del user");

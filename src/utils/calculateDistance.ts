@@ -1,16 +1,35 @@
+import DistanceApi from '../config/apiConnectionDistance';
 
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Radio de la Tierra en kilómetros
-    const toRad = (value: number) => (value * Math.PI) / 180;
+const calculateDistance = async (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    try {
+        const params = {
+            origins: `${lat1},${lon1}`,
+            destinations: `${lat2},${lon2}`,
+        };
 
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const response = await DistanceApi.get('/json', { params });
+        console.log("Response completa:", response.data);
 
-    return R * c;
+        const data = response.data;
+
+        // Validación de response
+        if (data.rows && data.rows[0] && data.rows[0].elements[0].status === "OK") {
+            const distance = data.rows[0].elements[0].distance.text;
+            const duration = data.rows[0].elements[0].duration.text;
+
+            const distanceValue = parseFloat(distance.replace(' km', '').replace(',', ''));
+
+            return {
+                distance: distanceValue,
+                estimatedArrival: duration
+            };
+        } else {
+            throw new Error('No se pudo calcular la distancia y duración.');
+        }
+    } catch (error) {
+        console.error("Error al calcular la distancia:", error);
+        throw error;
+    }
 };
 
 export { calculateDistance };

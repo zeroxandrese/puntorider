@@ -13,14 +13,6 @@ const prisma = new PrismaClient();
 
 const geocoder = NodeGeocoder(options)
 
-const calculateEstimatedArrival = (distance: number, speedKmPerHour: number): Date => {
-    const durationInHours = distance / speedKmPerHour; // Duración del viaje en horas
-    const durationInMilliseconds = durationInHours * 60 * 60 * 1000;
-
-    const currentDateTime = new Date();
-    return new Date(currentDateTime.getTime() + durationInMilliseconds);
-};
-
 const tripCalculatePostService = async ({
     latitudeStart,
     longitudeStart,
@@ -36,16 +28,26 @@ const tripCalculatePostService = async ({
     const latitudeEndParse = parseFloat(latitudeEnd);
     const longitudeEndParse = parseFloat(longitudeEnd);
     // Validar y calcular la distancia del viaje
-    const distance = calculateDistance(
+    const distance = await calculateDistance(
         latitudeStartParse,
         longitudeStartParse,
         latitudeEndParse,
         longitudeEndParse
     );
-
+console.log('desde el service', distance)
     // Costo base por km
-    const basePricePerKm = 0.6;
-    let totalPrice = distance * basePricePerKm;
+    const basePricePerKmBase = await prisma.priceBaseTrip.findFirst({
+        where: {
+            status: true
+        }
+    })
+
+    if (!basePricePerKmBase) {
+        throw new Error("Sin precio base");
+    }
+
+    const basePricePerKm = basePricePerKmBase.price;
+    let totalPrice = distance.distance * basePricePerKm;
 
     const resAddressStart = await geocoder.reverse({ lat: latitudeStartParse, lon: longitudeStartParse });
     const resAddressEnd = await geocoder.reverse({ lat: latitudeEndParse, lon: longitudeEndParse });
@@ -53,15 +55,10 @@ const tripCalculatePostService = async ({
     const currentDateTime = new Date();
     const currentHour = new Date().toISOString().slice(11, 16);
 
-    // Calcular hora estimada de llegada
-    const averageSpeedKmPerHour = 60; // Velocidad promedio
-    const estimatedArrivalTime = calculateEstimatedArrival(distance, averageSpeedKmPerHour);
-    const hourScheduledEnd = estimatedArrivalTime.toISOString().slice(11, 16);
-
     // Validacion discount code
     if (discountCode) {
         const responseDiscountCode = await prisma.discountCode.findFirst({
-            where: { code: discountCode, usersClientId: uid },
+            where: { code: discountCode, usersClientId: uid.uid },
         });
 
         if (!responseDiscountCode) {
@@ -76,11 +73,11 @@ const tripCalculatePostService = async ({
 
     const responseCalculeTrip = prisma.calculateTrip.create({
         data: {
-            usersClientId: uid,
+            usersClientId: uid.uid,
             price: totalPrice,
             basePrice: basePricePerKm,
             paymentMethod: paymentMethod,
-            kilometers: distance,
+            kilometers: distance.distance,
             latitudeStart: latitudeStartParse,
             longitudeStart: longitudeStartParse,
             latitudeEnd: latitudeEndParse,
@@ -89,7 +86,7 @@ const tripCalculatePostService = async ({
             addressEnd: resAddressEnd[0].formattedAddress || "No disponible",
             dateScheduled: currentDateTime,
             hourScheduledStart: currentHour,
-            hourScheduledEnd: hourScheduledEnd,
+            hourScheduledEnd: distance.estimatedArrival,
             discountCode: discountCode || null,
             discountApplied: discountCode ? true : false
         }

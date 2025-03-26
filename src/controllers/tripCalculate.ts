@@ -23,7 +23,7 @@ const tripCalculatePostController = async (req: any, res: Response) => {
             !longitudeStart || longitudeStart === "" ||
             !latitudeEnd || latitudeEnd === "" ||
             !longitudeEnd || longitudeEnd === "" ||
-            !paymentMethod || paymentMethod === "" 
+            !paymentMethod || paymentMethod === ""
         ) {
             res.status(401).json({
                 msg: "Información faltante"

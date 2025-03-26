@@ -1,24 +1,29 @@
 import { Router } from "express";
+import { check } from 'express-validator';
 
-import { usersClientPostController, usersClientPutController, usersClientDeleteController } from "../controllers/usersClient";
+import { shipmentPostController, shipmentPutController, shipmentDeleteController, shipmentGetController } from "../controllers/shipment";
 import { validarCampos } from "../middelware/validar-campos";
-import idValidator from "../helpers/id-validator";
+import { findShipment } from "../helpers/db-validators";
 import validarJWT from "../middelware/validar-jwt";
 
 const router = Router();
 
-router.post("/", validarJWT, validarCampos, usersClientPostController);
+router.get("/", validarJWT, shipmentGetController);
 
-router.put("/", [
-    validarJWT,
-    idValidator,
-    validarCampos
-],usersClientPutController);
+router.post("/", validarJWT, validarCampos, shipmentPostController);
 
-router.delete("/", [
+router.put("/:id", [
     validarJWT,
-    idValidator,
+    check('id', 'El id no es valido').isMongoId(),
+    check('id').custom(findShipment),
     validarCampos
-],usersClientDeleteController);
+],shipmentPutController);
+
+router.delete("/:id", [
+    validarJWT,
+    check('id', 'El id no es valido').isMongoId(),
+    check('id').custom(findShipment),
+    validarCampos
+],shipmentDeleteController);
 
 export { router };
