@@ -13,6 +13,9 @@ const prisma = new PrismaClient();
 
 const geocoder = NodeGeocoder(options)
 
+// Funcion para redondear el precio del trip
+const roundToNextHalfOrWhole = (value: number) => Math.ceil(value * 2) / 2;
+
 const tripCalculatePostService = async ({
     latitudeStart,
     longitudeStart,
@@ -34,20 +37,18 @@ const tripCalculatePostService = async ({
         latitudeEndParse,
         longitudeEndParse
     );
-console.log('desde el service', distance)
-    // Costo base por km
+
     const basePricePerKmBase = await prisma.priceBaseTrip.findFirst({
-        where: {
-            status: true
-        }
+        where: { status: true }
     })
 
     if (!basePricePerKmBase) {
-        throw new Error("Sin precio base");
+        console.error("Sin precio base, no se puede continuar");
+        throw new Error("No se encontró un precio base activo.");
     }
 
-    const basePricePerKm = basePricePerKmBase.price;
-    let totalPrice = distance.distance * basePricePerKm;
+    let totalPrice = distance.distance * basePricePerKmBase?.price!;
+    totalPrice = roundToNextHalfOrWhole(totalPrice);
 
     const resAddressStart = await geocoder.reverse({ lat: latitudeStartParse, lon: longitudeStartParse });
     const resAddressEnd = await geocoder.reverse({ lat: latitudeEndParse, lon: longitudeEndParse });
@@ -57,25 +58,27 @@ console.log('desde el service', distance)
 
     // Validacion discount code
     if (discountCode) {
+        console.log(discountCode, "discountCode")
         const responseDiscountCode = await prisma.discountCode.findFirst({
             where: { code: discountCode, usersClientId: uid.uid },
         });
 
         if (!responseDiscountCode) {
-            throw new Error("Código de descuento no válido");
-        }
+            console.error("Código de descuento no válido");
+        } else {
+            const discountPercentage = responseDiscountCode.percentage || 0;
+            const discountAmount = (totalPrice * discountPercentage) / 100;
+            totalPrice -= discountAmount;
 
-        // Aplicar descuento
-        const discountPercentage = responseDiscountCode.percentage || 0;
-        const discountAmount = (totalPrice * discountPercentage) / 100;
-        totalPrice -= discountAmount;
-    }
+            roundToNextHalfOrWhole(totalPrice);
+        };
+    };
 
     const responseCalculeTrip = prisma.calculateTrip.create({
         data: {
             usersClientId: uid.uid,
             price: totalPrice,
-            basePrice: basePricePerKm,
+            basePrice: basePricePerKmBase?.price!,
             paymentMethod: paymentMethod,
             kilometers: distance.distance,
             latitudeStart: latitudeStartParse,
@@ -86,7 +89,7 @@ console.log('desde el service', distance)
             addressEnd: resAddressEnd[0].formattedAddress || "No disponible",
             dateScheduled: currentDateTime,
             hourScheduledStart: currentHour,
-            hourScheduledEnd: distance.estimatedArrival,
+            estimatedArrival: distance.estimatedArrival,
             discountCode: discountCode || null,
             discountApplied: discountCode ? true : false
         }

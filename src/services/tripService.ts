@@ -26,13 +26,13 @@ const tripPostService = async ({
     try {
 
         if (!id) {
-            throw new Error("El UID es obligatorio para generar un viaje.");
+            console.error("El UID es obligatorio para generar un viaje.");
         }
 
         const tripDataFind = await prisma.calculateTrip.findFirst({ where: { usersClientId: id, status: true } });
 
         if (!tripDataFind) {
-            throw new Error("No se encontraron datos del viaje con el UID proporcionado.");
+            console.error("No se encontraron datos del viaje con el UID proporcionado.");
         }
 
         const keys = await redisClient.keys('positionDriver:*');
@@ -45,15 +45,15 @@ const tripPostService = async ({
 
         // Verificar si hay conductores disponibles
         if (positions.length === 0) {
-            throw new Error("No hay conductores disponibles cerca.");
+            console.error("No hay conductores disponibles cerca.");
         }
 
         // Calcular las distancias con los conductores
         const distances = await Promise.all(
             positions.map(async (driver) => {
                 const { distance } = await calculateDistance(
-                    tripDataFind.latitudeStart,
-                    tripDataFind.longitudeStart,
+                    tripDataFind!.latitudeStart,
+                    tripDataFind!.longitudeStart,
                     driver.position.latitude,
                     driver.position.longitude
                 );
@@ -74,27 +74,27 @@ const tripPostService = async ({
 
         const tripResponseService = await prisma.trip.create({
             data: {
-                usersClientId: tripDataFind.usersClientId,
+                usersClientId: tripDataFind!.usersClientId,
                 usersDriverId: closestDriver.driver,
-                price: tripDataFind.price,
-                basePrice: tripDataFind.basePrice,
-                paymentMethod: tripDataFind.paymentMethod,
-                kilometers: tripDataFind.kilometers,
-                latitudeStart: tripDataFind.latitudeStart,
-                longitudeStart: tripDataFind.longitudeStart,
-                latitudeEnd: tripDataFind.latitudeEnd,
-                longitudeEnd: tripDataFind.longitudeEnd,
-                addressStart: tripDataFind.addressStart,
-                addressEnd: tripDataFind.addressEnd,
-                hourStart: tripDataFind.hourScheduledStart,
-                hourEnd: tripDataFind.hourScheduledEnd,
-                discountCode: tripDataFind.discountCode,
-                discountApplied: tripDataFind.discountApplied
+                price: tripDataFind!.price,
+                basePrice: tripDataFind!.basePrice,
+                paymentMethod: tripDataFind!.paymentMethod,
+                kilometers: tripDataFind!.kilometers,
+                latitudeStart: tripDataFind!.latitudeStart,
+                longitudeStart: tripDataFind!.longitudeStart,
+                latitudeEnd: tripDataFind!.latitudeEnd,
+                longitudeEnd: tripDataFind!.longitudeEnd,
+                addressStart: tripDataFind!.addressStart,
+                addressEnd: tripDataFind!.addressEnd,
+                hourStart: tripDataFind!.hourScheduledStart,
+                estimatedArrival: tripDataFind!.estimatedArrival,
+                discountCode: tripDataFind!.discountCode,
+                discountApplied: tripDataFind!.discountApplied
             }
         });
 
         // Actualizacion de la tabla intermedia de viaje
-        prisma.calculateTrip.update({ where: { uid: tripDataFind.uid }, data: { status: false } });
+        prisma.calculateTrip.update({ where: { uid: tripDataFind!.uid }, data: { status: false } });
 
         return tripResponseService;
     } catch (err) {
@@ -146,7 +146,7 @@ const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProp
                         addressStart: updatedTrip.addressStart,
                         addressEnd: updatedTrip.addressEnd,
                         hourStart: updatedTrip.hourStart,
-                        hourEnd: updatedTrip.hourEnd,
+                        hourEnd: new Date().toString(),
                         discountCode: updatedTrip.discountCode,
                         discountApplied: updatedTrip.discountApplied
                     }
@@ -167,7 +167,7 @@ const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProp
                         addressStart: updatedTrip.addressStart,
                         addressEnd: updatedTrip.addressEnd,
                         hourStart: updatedTrip.hourStart,
-                        hourEnd: updatedTrip.hourEnd,
+                        hourEnd: new Date().toString(),
                         discountCode: updatedTrip.discountCode,
                         discountApplied: updatedTrip.discountApplied
                     }

@@ -44,7 +44,7 @@ const shipmentPostService = async ({ usersDriverId, latitudeStart, longitudeStar
             data: {
                 usersDriverId,
                 deliveryAddress: resDeliveryAddress[0].formattedAddress,
-                estimatedDelivery: distance.estimatedArrival,
+                estimatedArrival: distance.estimatedArrival,
                 pickupAddress: resPickupAddress[0].formattedAddress
             }
         })
@@ -122,6 +122,7 @@ const shipmentPutService = async ({ usersDriverId, latitudeStart, longitudeStart
                         shipmentId: existingShipment.uid,
                         statusDelivery: "Close",
                         pickupAddress: pickupAddress || existingShipment.pickupAddress,
+                        hourEnd: new Date().toString(),
                         shipmentNumber: existingShipment.shipmentNumber,
                         note
                     }

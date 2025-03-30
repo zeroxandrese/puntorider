@@ -139,30 +139,31 @@ model CommentsDriver {
 }
 
 model Trip {
-  uid             String      @id @default(auto()) @map("_id") @db.ObjectId
-  usersClientId   String      @db.ObjectId
-  usersClient     UsersClient @relation("UserClientTrip", fields: [usersClientId], references: [uid])
-  usersDriverId   String      @db.ObjectId
-  usersDriver     UsersDriver @relation("UserDriverTrip", fields: [usersDriverId], references: [uid])
-  complete        Boolean     @default(false)
-  paid            Boolean     @default(false)
-  price           Float       @default(0)
-  basePrice       Float       @default(0)
-  paymentMethod   String
-  kilometers      Float       @default(0)
-  latitudeStart   Float       @default(0)
-  longitudeStart  Float       @default(0)
-  latitudeEnd     Float       @default(0)
-  longitudeEnd    Float       @default(0)
-  addressStart    String
-  addressEnd      String
-  hourStart       String
-  hourEnd         String
-  discountCode    String?
-  discountApplied Boolean?    @default(false)
-  status          Boolean     @default(true)
-  created         DateTime    @default(now())
-  cancelForUser   Boolean     @default(false)
+  uid              String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId    String      @db.ObjectId
+  usersClient      UsersClient @relation("UserClientTrip", fields: [usersClientId], references: [uid])
+  usersDriverId    String      @db.ObjectId
+  usersDriver      UsersDriver @relation("UserDriverTrip", fields: [usersDriverId], references: [uid])
+  complete         Boolean     @default(false)
+  paid             Boolean     @default(false)
+  price            Float       @default(0)
+  basePrice        Float       @default(0)
+  paymentMethod    String
+  kilometers       Float       @default(0)
+  latitudeStart    Float       @default(0)
+  longitudeStart   Float       @default(0)
+  latitudeEnd      Float       @default(0)
+  longitudeEnd     Float       @default(0)
+  addressStart     String
+  addressEnd       String
+  hourStart        String
+  hourEnd          String?
+  estimatedArrival String
+  discountCode     String?
+  discountApplied  Boolean?    @default(false)
+  status           Boolean     @default(true)
+  created          DateTime    @default(now())
+  cancelForUser    Boolean     @default(false)
 
   commentsClient     CommentsClient[]     @relation("tripCommentClient")
   commentsDriver     CommentsDriver[]     @relation("tripCommentDriver")
@@ -226,7 +227,8 @@ model ScheduledTrip {
   addressEnd         String
   dateScheduled      DateTime
   hourScheduledStart String
-  hourScheduledEnd   String
+  hourScheduledEnd   String?
+  estimatedArrival   String
   discountCode       String?
   discountApplied    Boolean?    @default(false)
   cancelForUser      Boolean     @default(false)
@@ -363,7 +365,9 @@ model Shipment {
   statusDelivery    String      @default("Pending")
   deliveryAddress   String?
   pickupAddress     String?
-  estimatedDelivery DateTime?
+  estimatedDelivery String?
+  estimatedArrival  String
+  hourEnd           String?
   note              String?
   status            Boolean     @default(true)
   createdAt         DateTime    @default(now())
@@ -400,6 +404,7 @@ model ShipmentHistory {
   deliveryAddress String?
   pickupAddress   String?
   shipmentNumber  String?
+  hourEnd         String
   updatedAt       DateTime @default(now())
   note            String?
 
@@ -423,7 +428,8 @@ model CalculateTrip {
   addressEnd         String
   dateScheduled      DateTime
   hourScheduledStart String
-  hourScheduledEnd   String
+  hourScheduledEnd   String?
+  estimatedArrival   String
   scheduledStatus    Boolean     @default(false)
   discountCode       String?
   discountApplied    Boolean?    @default(false)

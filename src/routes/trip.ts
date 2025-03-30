@@ -12,7 +12,7 @@ router.get("/", [
     validarJWT
 ], tripGetController)
 
-router.post("/", validarJWT, validarCampos, tripPostController);
+router.post("/", validarJWT, tripPostController);
 
 router.put("/:id", [
     validarJWT,
