@@ -99,14 +99,14 @@ model Vehicles {
   uid           String      @id @default(auto()) @map("_id") @db.ObjectId
   usersDriverId String      @db.ObjectId
   usersDriver   UsersDriver @relation("VehicleDriver", fields: [usersDriverId], references: [uid])
-  register      String
+  register      String?
   model         String
   brand         String
   year          Int         @default(0)
   color         String
-  cargo         Boolean     @default(false)
-  shipment      Boolean     @default(false)
-  status        Boolean     @default(true)
+  cargo         Boolean?     @default(false)
+  shipment      Boolean?     @default(false)
+  status        Boolean?     @default(true)
 
   @@index([usersDriverId])
   @@map("vehicles")

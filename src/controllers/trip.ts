@@ -43,7 +43,7 @@ const tripPostController = async (req: any, res: Response) => {
 
         };
 
-        const responseTrip = await tripPostService({ id: uid });
+        const responseTrip = await tripPostService({ id: uid.uid });
 
         res.status(201).json(responseTrip)
 

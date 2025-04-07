@@ -8,7 +8,6 @@ const calculateDistance = async (lat1: number, lon1: number, lat2: number, lon2:
         };
 
         const response = await DistanceApi.get('/json', { params });
-        console.log("Response completa:", response.data);
 
         const data = response.data;
 

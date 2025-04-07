@@ -74,6 +74,21 @@ const tripCalculatePostService = async ({
         };
     };
 
+    const existingTrip = await prisma.calculateTrip.findFirst({
+        where: {
+            usersClientId: uid.uid,
+            status: true
+        }
+    });
+
+    if (existingTrip) {
+        await prisma.calculateTrip.deleteMany({
+            where: {
+                usersClientId: uid.uid,
+                status: true
+            }
+        });
+    }
     const responseCalculeTrip = prisma.calculateTrip.create({
         data: {
             usersClientId: uid.uid,
