@@ -16,6 +16,7 @@ const calculateDistance = async (lat1: number, lon1: number, lat2: number, lon2:
             const distance = data.rows[0].elements[0].distance.text;
             const duration = data.rows[0].elements[0].duration.text;
 
+            console.log(distance)
             const distanceValue = parseFloat(distance.replace(' km', '').replace(',', ''));
 
             return {

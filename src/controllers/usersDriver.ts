@@ -31,7 +31,7 @@ const usersDriverPostController = async (req: Request, res: Response) => {
 };
 
 const usersDriverPutController = async (req: any, res: Response) => {
-    const { uid } = req.userAuth;
+    const { uid } = req.userAuthDriver;
     const { numberPhone, name, email, lastName } = req.body
 
     try {

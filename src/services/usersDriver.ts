@@ -1,19 +1,24 @@
 import { PrismaClient } from "@prisma/client";
 import * as bcryptjs from 'bcryptjs';
+import CryptoJS from 'crypto-js';
+
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 import { generateJwt } from '../helpers/generate-jwt';
 
-import { UserClientUID, UserDriverUpdate, DriverUserPost } from '../interface/interface'
+import { UserClientUID, UserDriverUpdate, DriverUserPost } from '../interface/interface';
+
 
 const prisma = new PrismaClient
-
-const encryptPhone = (phone: string) => {
-    return CryptoJS.AES.encrypt(phone.toString(), process.env.secretKeyCrypto!).toString();
-};
 
 const decryptData = (encryptedPhone: string) => {
     const bytes = CryptoJS.AES.decrypt(encryptedPhone, process.env.secretKeyCrypto!);
     return bytes.toString(CryptoJS.enc.Utf8);
+};
+
+const encryptData = (data: string | number) => {
+    return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
 };
 
 
@@ -24,14 +29,14 @@ const usersDriverPostService = async ({ email, password }: DriverUserPost) => {
         const salt = bcryptjs.genSaltSync();
         const hashedPassword = bcryptjs.hashSync(password, salt);
 
-       const userResponseService = await prisma.usersDriver.create({
+        const userResponseService = await prisma.usersDriver.create({
             data: {
-                email: encryptPhone(email) || "default@example.com",
+                email: encryptData(email) || "default@example.com",
                 password: hashedPassword
-                
+
             }
         })
-
+        console.log(userResponseService);
         const { password: userPassword, ...sanitizedUser } = userResponseService;
 
         const token = await generateJwt(userResponseService.uid);
@@ -40,7 +45,7 @@ const usersDriverPostService = async ({ email, password }: DriverUserPost) => {
 
     } catch (err) {
         throw new Error("Error en el servicio del user");
-        
+
     }
 };
 
@@ -52,13 +57,13 @@ const usersDriverPutService = async ({ numberPhone, name, lastName, email, uid }
             throw new Error("El UID es obligatorio para actualizar un usuario.");
         }
 
-       const userResponseService = await prisma.usersDriver.update({
-        where: { uid: uid },
+        const userResponseService = await prisma.usersDriver.update({
+            where: { uid: uid },
             data: {
                 name: name || "Aliado",
                 lastName,
-                email: encryptPhone(email) || "default@example.com",
-                numberPhone: encryptPhone(numberPhone) || "0"
+                email: encryptData(email) || "default@example.com",
+                numberPhone: encryptData(numberPhone) || "0"
             }
         })
 
@@ -68,7 +73,7 @@ const usersDriverPutService = async ({ numberPhone, name, lastName, email, uid }
         if (userResponseService?.email && userResponseService?.numberPhone) {
             emailResponse = decryptData(userResponseService?.email)
             phone = decryptData(userResponseService?.numberPhone)
-            
+
         }
 
         const user = { ...userResponseService, email: emailResponse, numberPhone: phone };
@@ -77,7 +82,7 @@ const usersDriverPutService = async ({ numberPhone, name, lastName, email, uid }
 
     } catch (err) {
         throw new Error("Error en el servicio del user");
-        
+
     }
 };
 
@@ -89,10 +94,10 @@ const usersDriverDeleteService = async ({ uid }: UserClientUID) => {
             throw new Error("El UID es obligatorio para actualizar un usuario.");
         }
 
-       const userResponseService = await prisma.usersDriver.update({
-        where: { uid: uid },
+        const userResponseService = await prisma.usersDriver.update({
+            where: { uid: uid },
             data: {
-                status : false
+                status: false
             }
         })
 
@@ -100,7 +105,7 @@ const usersDriverDeleteService = async ({ uid }: UserClientUID) => {
 
     } catch (err) {
         throw new Error("Error en el servicio del user");
-        
+
     }
 };
 

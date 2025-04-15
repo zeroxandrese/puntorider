@@ -3,12 +3,12 @@ import { check } from "express-validator";
 
 import { validarCampos } from "../middelware/validar-campos";
 import { loginDriverController, verifyTokenDriverController } from '../controllers/authDriver';
-import validarJWT from "../middelware/validar-jwt";
+import validarJWTDriver from "../middelware/validar-jwt-driver";
 
 const router = Router();
 
 router.post("/verify",
-    validarJWT
+    validarJWTDriver
 , verifyTokenDriverController);
 
 router.post("/login", [

@@ -2,19 +2,19 @@ import { Router } from "express";
 
 import { usersDriverPostController, usersDriverPutController, usersDriverDeleteController } from "../controllers/usersDriver";
 import { validarCampos } from "../middelware/validar-campos";
-import validarJWT from "../middelware/validar-jwt";
+import validarJWTDriver from "../middelware/validar-jwt-driver";
 
 const router = Router();
 
-router.post("/", validarJWT, validarCampos, usersDriverPostController);
+router.post("/", validarCampos, usersDriverPostController);
 
 router.put("/", [
-    validarJWT,
+    validarJWTDriver,
     validarCampos
 ],usersDriverPutController);
 
 router.delete("/", [
-    validarJWT,
+    validarJWTDriver,
     validarCampos
 ],usersDriverDeleteController);
 

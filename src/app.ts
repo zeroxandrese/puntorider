@@ -1,13 +1,17 @@
 import express from "express";
+import { createServer } from "http";
 import "dotenv/config";
 import cors from "cors";
 import { dbConection } from "./config/dbcontection";
 import { router } from "./routes";
 import path from "path";
 
+import { initSocketio } from "../src/utils/initSocket";
+
 const PORT = process.env.PORT || 3001;
 
 const app = express();
+const server = createServer(app);
 
 // Middleware para servir archivos estáticos desde el directorio 'public'
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -23,5 +27,8 @@ app.use(cors({
   }));
 app.use(express.json());
 app.use(router);
+
+initSocketio(server);
+
 dbConection().then(()=>console.log('BD Conectada al Server Transportia😎'));
 app.listen(PORT, ()=> console.log(`Conectados desde el puerto ${PORT}`))

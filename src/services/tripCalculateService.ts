@@ -11,7 +11,26 @@ const options: NodeGeocoder.Options = {
 
 const prisma = new PrismaClient();
 
-const geocoder = NodeGeocoder(options)
+const geocoder = NodeGeocoder(options);
+
+const haversineDistance = (
+    lat1: number, lon1: number,
+    lat2: number, lon2: number
+) => {
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const R = 6371; // Radio de la Tierra en km
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
 
 // Funcion para redondear el precio del trip
 const roundToNextHalfOrWhole = (value: number) => Math.ceil(value * 2) / 2;
@@ -30,6 +49,25 @@ const tripCalculatePostService = async ({
     const longitudeStartParse = parseFloat(longitudeStart);
     const latitudeEndParse = parseFloat(latitudeEnd);
     const longitudeEndParse = parseFloat(longitudeEnd);
+
+    const estimatedDistance = haversineDistance(
+        latitudeStartParse,
+        longitudeStartParse,
+        latitudeEndParse,
+        longitudeEndParse
+    );
+    
+    // límite de 100 km
+    const MAX_DISTANCE_KM = 100;
+
+    if (estimatedDistance > MAX_DISTANCE_KM) {
+        console.warn(`Distancia estimada muy grande: ${estimatedDistance.toFixed(2)} km`);
+        return {
+            message: `La distancia entre los puntos seleccionados excede el límite permitido de ${MAX_DISTANCE_KM} km.`,
+            valid: false
+        };
+    }
+
     // Validar y calcular la distancia del viaje
     const distance = await calculateDistance(
         latitudeStartParse,

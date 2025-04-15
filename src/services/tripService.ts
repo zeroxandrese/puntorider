@@ -1,8 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { redisClient } from '../config/redisConnection';
+import { getSocketIO } from "../utils/initSocket";
 
 import { genericIdProps, tripPutProps, tripDeleteProps, userDriver, vehicle } from '../interface/interface';
 import { calculateDistance } from '../utils/calculateDistance';
+
+const io = getSocketIO();
 
 const prisma = new PrismaClient
 
@@ -106,86 +109,72 @@ const tripPostService = async ({ id }: genericIdProps) => {
         );
 
         const validPositions = positions.filter((p) => p !== null) as { userId: string; position: { latitude: number; longitude: number } }[];
+        
 
         if (validPositions.length === 0) {
             console.error("No hay conductores disponibles en la zona.");
-            return null;
+            return {
+                tripId: "",
+                message: "No hay conductores disponibles dentro de tu zona."
+            };
         }
 
         // Calcular distancias con conductores
         const distances = await Promise.all(
             validPositions.map(async (driver) => {
-                console.log("📍 Punto de inicio:", tripDataFind.latitudeStart, tripDataFind.longitudeStart);
-                console.log("🚗 Ubicación del conductor:", driver.position.latitude, driver.position.longitude);
+
                 const { distance, estimatedArrival } = await calculateDistance(
                     tripDataFind.latitudeStart,
                     tripDataFind.longitudeStart,
                     driver.position.latitude,
                     driver.position.longitude
                 );
-                console.log(`📏 Distancia con ${driver.userId}: ${distance} km`);
+
                 return { driver: driver.userId, distance, estimatedArrival };
             })
         );
+
+        console.log("📦 Distancias calculadas:");
+console.log(distances);
 
         // Filtrar conductores dentro del rango
         const reasonableDistance = 12; // en kilómetros
         const driversInRange = distances.filter(driver => driver.distance <= reasonableDistance);
 
+        console.log("✅ Conductores dentro del rango:", driversInRange);
         if (driversInRange.length === 0) {
             console.error("No hay conductores disponibles dentro de tu zona.");
-            return null;
+            return {
+                tripId: "",
+                message: "No hay conductores disponibles dentro de tu zona."
+            };
         }
 
-        // Seleccionar el conductor más cercano
-        const closestDriver = driversInRange.reduce((prev, current) => (prev.distance < current.distance ? prev : current));
+        // Guardar lista de conductores potenciales para el viaje
+        await redisClient.set(`pendingTrip:${tripDataFind.uid}`, JSON.stringify(driversInRange.map(d => d.driver)));
 
-        // Crear el viaje
-        const tripResponseService = await prisma.trip.create({
-            data: {
-                usersClientId: tripDataFind.usersClientId,
-                usersDriverId: closestDriver.driver,
+        //Emisiòn de notificacion a los conductores
+        driversInRange.forEach((driver) => {
+            io.to(driver.driver).emit("new_trip_request", {
+                tripId: tripDataFind.uid,
+                origin: {
+                    lat: tripDataFind.latitudeStart,
+                    lng: tripDataFind.longitudeStart,
+                    address: tripDataFind.addressStart,
+                },
+                destination: {
+                    lat: tripDataFind.latitudeEnd,
+                    lng: tripDataFind.longitudeEnd,
+                    address: tripDataFind.addressEnd,
+                },
                 price: tripDataFind.price,
-                basePrice: tripDataFind.basePrice,
-                paymentMethod: tripDataFind.paymentMethod,
-                kilometers: tripDataFind.kilometers,
-                latitudeStart: tripDataFind.latitudeStart,
-                longitudeStart: tripDataFind.longitudeStart,
-                latitudeEnd: tripDataFind.latitudeEnd,
-                longitudeEnd: tripDataFind.longitudeEnd,
-                addressStart: tripDataFind.addressStart,
-                addressEnd: tripDataFind.addressEnd,
-                hourStart: tripDataFind.hourScheduledStart,
-                estimatedArrival: tripDataFind.estimatedArrival,
-                discountCode: tripDataFind.discountCode,
-                discountApplied: tripDataFind.discountApplied
-            }
+                estimatedArrival: driver.estimatedArrival,
+            });
         });
 
-        // Actualización de la tabla intermedia de viaje
-        await prisma.calculateTrip.update({
-            where: { uid: tripDataFind.uid },
-            data: { status: false }
-        });
-        console.log('antes')
-        let driverData: userDriver | null = null;
-        let vehicleData: vehicle | null = null;
-
-        if (closestDriver.driver) {
-            driverData = await prisma.usersDriver.findFirst({
-                where: { uid: closestDriver.driver }
-            })
-
-            vehicleData = await prisma.vehicles.findFirst({
-                where: { usersDriverId: closestDriver.driver }
-            })
-        }
-        console.log(driverData,vehicleData )
         return {
-            tripResponseService,
-            arrivalInitial: closestDriver.estimatedArrival,
-            driverData: driverData,
-            vehicleData: vehicleData
+            tripId: tripDataFind.uid,
+            message: "Solicitud de viaje enviada a conductores cercanos.",
         };
 
     } catch (err: any) {
@@ -193,6 +182,70 @@ const tripPostService = async ({ id }: genericIdProps) => {
         return null;
     }
 };
+
+const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripId: string }) => {
+    try {
+      const pendingDriversStr = await redisClient.get(`pendingTrip:${tripId}`);
+      const pendingDrivers: string[] = pendingDriversStr ? JSON.parse(pendingDriversStr) : [];
+  
+      if (!pendingDrivers.includes(driverId)) {
+        return { success: false, message: "Este conductor no puede aceptar este viaje." };
+      }
+  
+      // Eliminar la key para evitar que otros acepten
+      await redisClient.del(`pendingTrip:${tripId}`);
+  
+      // Buscar los datos del viaje
+      const tripDataFind = await prisma.calculateTrip.findUnique({ where: { uid: tripId } });
+      if (!tripDataFind) return { success: false, message: "El viaje no existe." };
+  
+      const trip = await prisma.trip.create({
+        data: {
+          usersClientId: tripDataFind.usersClientId,
+          usersDriverId: driverId,
+          price: tripDataFind.price,
+          basePrice: tripDataFind.basePrice,
+          paymentMethod: tripDataFind.paymentMethod,
+          kilometers: tripDataFind.kilometers,
+          latitudeStart: tripDataFind.latitudeStart,
+          longitudeStart: tripDataFind.longitudeStart,
+          latitudeEnd: tripDataFind.latitudeEnd,
+          longitudeEnd: tripDataFind.longitudeEnd,
+          addressStart: tripDataFind.addressStart,
+          addressEnd: tripDataFind.addressEnd,
+          hourStart: tripDataFind.hourScheduledStart,
+          estimatedArrival: tripDataFind.estimatedArrival,
+          discountCode: tripDataFind.discountCode,
+          discountApplied: tripDataFind.discountApplied,
+        }
+      });
+  
+      await prisma.calculateTrip.update({
+        where: { uid: tripId },
+        data: { status: false }
+      });
+  
+      // Notificaciones
+      const driverData = await prisma.usersDriver.findFirst({ where: { uid: driverId } });
+      const vehicleData = await prisma.vehicles.findFirst({ where: { usersDriverId: driverId } });
+  
+      io.to(tripDataFind.usersClientId).emit("trip_accepted", {
+        trip,
+        driver: driverData,
+        vehicle: vehicleData,
+      });
+  
+      io.to(driverId).emit("trip_assigned", {
+        trip,
+      });
+  
+      return { success: true, trip };
+  
+    } catch (err: any) {
+      console.error("Error al aceptar el viaje:", err.message);
+      return { success: false, message: "Error interno." };
+    }
+  };
 
 const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProps) => {
 
@@ -300,4 +353,4 @@ const tripDeleteService = async ({ id }: tripDeleteProps) => {
     }
 };
 
-export { tripPostService, tripPutService, tripDeleteService, tripGetService };
+export { tripPostService, tripPutService, tripDeleteService, tripGetService, tripAcceptService };

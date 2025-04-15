@@ -1,19 +1,22 @@
 import { PrismaClient } from "@prisma/client";
+import CryptoJS from 'crypto-js';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 
 import { generateJwt } from '../helpers/generate-jwt';
-import { UserClientCreate, UserClientUpdate, UserClientUID } from '../interface/interface'
+import { UserClientCreate, UserClientUpdate, UserClientUID } from '../interface/interface';
 
 const prisma = new PrismaClient
-
-const encryptPhone = (phone: string) => {
-    return CryptoJS.AES.encrypt(phone.toString(), process.env.secretKeyCrypto!).toString();
-};
 
 const decryptData = (encryptedPhone: string) => {
     const bytes = CryptoJS.AES.decrypt(encryptedPhone, process.env.secretKeyCrypto!);
     return bytes.toString(CryptoJS.enc.Utf8);
 };
 
+const encryptData = (data: string | number) => {
+    return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
+};
 
 const usersClientPostService = async ({ numberPhone }: UserClientCreate) => {
 
@@ -23,7 +26,7 @@ const usersClientPostService = async ({ numberPhone }: UserClientCreate) => {
             data: {
                 name: "Aliado",
                 email: "default@example.com",
-                numberPhone: encryptPhone(numberPhone)
+                numberPhone: encryptData(numberPhone)
             }
         })
 
@@ -61,8 +64,8 @@ const usersClientPutService = async ({ numberPhone, name, email, uid }: UserClie
         where: { uid: uid },
             data: {
                 name: name || "Aliado",
-                email: encryptPhone(email) || "default@example.com",
-                numberPhone: encryptPhone(numberPhone) || "0"
+                email: encryptData(email) || "default@example.com",
+                numberPhone: encryptData(numberPhone) || "0"
             }
         })
 
