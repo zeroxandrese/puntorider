@@ -4,7 +4,7 @@ import { genericIdProps } from '../interface/interface'
 
 const prisma = new PrismaClient
 
-const historyTripsClientGetGetService = async ({ id }: genericIdProps) => {
+const historyTripsClientGetService = async ({ id }: genericIdProps) => {
 
     try {
 
@@ -13,7 +13,7 @@ const historyTripsClientGetGetService = async ({ id }: genericIdProps) => {
         }
 
        const historyTripsClientResponseService = await prisma.historyTripsClient.findMany({
-        where: { uid: id }
+        where: { usersClientId: id }
         })
 
         return historyTripsClientResponseService
@@ -24,4 +24,4 @@ const historyTripsClientGetGetService = async ({ id }: genericIdProps) => {
     }
 };
 
-export { historyTripsClientGetGetService };
+export { historyTripsClientGetService };

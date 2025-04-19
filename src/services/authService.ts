@@ -13,13 +13,24 @@ interface Props {
     googleToken: string
 }
 
+const encryptData = (data: string | number) => {
+    return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
+};
+
+const encryptPhone = (phone: string | number) => {
+    return CryptoJS.HmacSHA224(phone.toString(), process.env.secretKeyCrypto!).toString();
+};
+
 const decryptData = (encryptedPhone: string) => {
     const bytes = CryptoJS.AES.decrypt(encryptedPhone, process.env.secretKeyCrypto!);
     return bytes.toString(CryptoJS.enc.Utf8);
 };
 
-const encryptData = (data: string | number) => {
-    return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
+const generateReferralCode = (uid: string): string => {
+    const randomPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const uidPart = uid.slice(-5).toUpperCase();
+
+    return `REF${randomPart}${uidPart}`; // Ej: REF0382K8Z5A
 };
 
 const prisma = new PrismaClient();
@@ -33,7 +44,7 @@ const verifyToken = async ({ uid }: UIDObject) => {
 
         const emailDescrypt = decryptData(uid.email)
         const phone = decryptData(uid.numberPhone)
-        
+
         const user = { ...uid, email: emailDescrypt, numberPhone: phone };
 
         const token = await generateJwt(uid.uid);
@@ -48,8 +59,8 @@ const verifyToken = async ({ uid }: UIDObject) => {
     }
 };
 
-
-const login = async ({ numberPhone }: PropsLogin) => {
+// Componente no funcional comentado por (ANDRES)
+/* const login = async ({ numberPhone }: PropsLogin) => {
 
     try {
         const phoneEncrypt = encryptData(numberPhone)
@@ -90,14 +101,16 @@ const login = async ({ numberPhone }: PropsLogin) => {
     } catch (err) {
         throw new Error('Algo salio mal, contacte con el administrador');
     }
-};
+}; */
 
 const googleLogin = async ({ googleToken }: Props) => {
-
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
 
-    try {
+    if (!googleClientId) {
+        throw new Error("Falta configurar GOOGLE_CLIENT_ID");
+    }
 
+    try {
         const client = new OAuth2Client(googleClientId);
         const ticket = await client.verifyIdToken({
             idToken: googleToken,
@@ -105,51 +118,58 @@ const googleLogin = async ({ googleToken }: Props) => {
         });
 
         const payload = ticket.getPayload();
-
-        if (!payload) {
-            throw new Error('Error contacte al admin')
+        if (!payload || !payload.email) {
+            throw new Error("No se pudo verificar el usuario de Google");
         }
 
-        if (!payload.email) {
-            throw new Error('Error con el email')
-        }
-
-        const googleUserId = payload.sub;
-        const emailEncryptData = encryptData(payload.email)
+        const { email, name, picture, sub: googleUserId } = payload;
+        const emailEncrypted = encryptData(email);
+        const emailHash = encryptPhone(email);
 
         let user = await prisma.usersClient.findFirst({
-            where: { email: emailEncryptData }
+            where: { hashValidationEmail: emailHash }
         });
 
-
         if (!user) {
-            const { name, picture } = payload;
             user = await prisma.usersClient.create({
                 data: {
-                    email: emailEncryptData || 'default@example.com',
-                    name: name || 'Aliado',
-                    img: picture,
+                    email: emailEncrypted,
+                    hashValidationEmail: emailHash,
+                    name: name || "Aliado",
+                    img: picture || null,
                     google: true,
                     googleUserId,
                 }
             });
+
+            const referralCode = generateReferralCode(user.uid);
+
+            await prisma.usersClient.update({
+                where: { uid: user.uid },
+                data: { referralCode },
+            });
         }
 
-        const userId = user.uid.toString();
-        const token = await generateJwt(userId);
+        const updatedUser = await prisma.usersClient.findFirst({
+            where: { uid: user.uid }
+        });
+
+        const token = await generateJwt(updatedUser?.uid.toString());
 
         return {
-            user,
+            updatedUser,
+            validationPhoneRequire: user.hashValidationPhone ? false : true,
             token
         };
 
-    } catch (error) {
-        throw new Error('Algo salio mal, contacte con el administrador');
+    } catch (error: any) {
+        console.error("Error en Google Login:", error);
+        throw new Error("Error al iniciar sesión con Google. Intente más tarde.");
     }
 };
 
 export {
-    login,
+    /* login, */
     googleLogin,
     verifyToken
 }

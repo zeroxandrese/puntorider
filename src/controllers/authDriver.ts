@@ -3,10 +3,10 @@ import { Request, Response } from "express";
 import { verifyToken, loginDriver } from "../services/authDriverService";
 
 const verifyTokenDriverController = async (req: any, res: Response) => {
-    const { uid } = req.userAuthDriver;
+    const uid = req.userAuthDriver;
 
     try {
-        
+
         const responseUser = await verifyToken({ uid });
 
         res.status(201).json(responseUser)

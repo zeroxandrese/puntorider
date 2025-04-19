@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
-import { discountCodePostProps, commentsClientsDeleteProps } from '../interface/interface'
+import { discountCodePostProps, genericIdProps } from '../interface/interface'
 
 const prisma = new PrismaClient
 
@@ -8,7 +8,7 @@ interface discountCodePutProps extends discountCodePostProps {
     id: string
 }
 
-const discountCodeGetService = async ({ id }: commentsClientsDeleteProps) => {
+const discountCodeGetService = async ({ id }: genericIdProps) => {
 
     try {
 
@@ -69,7 +69,7 @@ const discountCodePutService = async ({ code, usersClientId, percentage, id }: d
     }
 };
 
-const discountCodeDeleteService = async ({ id }: commentsClientsDeleteProps) => {
+const discountCodeDeleteService = async ({ id }: genericIdProps) => {
 
     try {
 

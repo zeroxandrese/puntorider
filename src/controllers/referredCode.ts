@@ -23,16 +23,15 @@ const referredCodeGetController = async (req: any, res: Response) => {
 const referredCodePostController = async (req: any, res: Response) => {
     const { uid } = req.userAuth;
     const { code } = req.body;
-    const idreferenced = req.params.id;
     
     try {
-        if (!code || code === "" || !idreferenced || idreferenced === "") {
+        if (!code || code === "" || !uid ) {
             res.status(401).json({
                 msg: "Información faltante"
             });
         }
 
-        const responseReferredCode = await referredCodePostService({ id: uid, code, idreferenced });
+        const responseReferredCode = await referredCodePostService({ id: uid, code });
 
         res.status(201).json(responseReferredCode)
 

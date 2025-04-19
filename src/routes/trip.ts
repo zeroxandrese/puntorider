@@ -5,6 +5,7 @@ import { tripPostController, tripPutController, tripDeleteController, tripGetCon
 import { validarCampos } from "../middelware/validar-campos";
 import { findTrip } from "../helpers/db-validators";
 import validarJWT from "../middelware/validar-jwt";
+import validarJWTDriver from "../middelware/validar-jwt-driver";
 
 const router = Router();
 
@@ -14,7 +15,7 @@ router.get("/", [
 
 router.post("/", validarJWT, tripPostController);
 
-router.post("/driverAccepted/:id", validarJWT, tripAcceptController);
+router.post("/driverAccepted/:id", validarJWTDriver, tripAcceptController);
 
 router.put("/:id", [
     validarJWT,

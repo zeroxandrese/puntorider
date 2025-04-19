@@ -7,17 +7,20 @@ import { UIDObject, PropsLoginDriver } from '../interface/interface'
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { generateJwt } from '../helpers/generate-jwt';
-
-const decryptData = (encryptedPhone: string) => {
-    const bytes = CryptoJS.AES.decrypt(encryptedPhone, process.env.secretKeyCrypto!);
-    return bytes.toString(CryptoJS.enc.Utf8);
-};
+import { generateJwtDriver } from '../helpers/generate-jwt-driver';
 
 const encryptData = (data: string | number) => {
     return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
 };
 
+const encryptEmail = (phone: string | number) => {
+    return CryptoJS.HmacSHA224(phone.toString(), process.env.secretKeyCrypto!).toString();
+};
+
+const decryptData = (encryptedPhone: string) => {
+    const bytes = CryptoJS.AES.decrypt(encryptedPhone, process.env.secretKeyCrypto!);
+    return bytes.toString(CryptoJS.enc.Utf8);
+};
 const prisma = new PrismaClient();
 
 const verifyToken = async ({ uid }: UIDObject) => {
@@ -43,10 +46,10 @@ const verifyToken = async ({ uid }: UIDObject) => {
 const loginDriver = async ({ email, password }: PropsLoginDriver) => {
 
     try {
-        const emailEncrypt = encryptData(email)
+        const emailEncrypt = encryptEmail(email)
 
         const userResponse = await prisma.usersDriver.findFirst({
-            where: { email: emailEncrypt }
+            where: { hashValidationEmail: emailEncrypt }
         });
 
         if (!userResponse) {
@@ -65,7 +68,7 @@ const loginDriver = async ({ email, password }: PropsLoginDriver) => {
         }
 
         //Generar JWT
-        const token = await generateJwt(userResponse.uid);
+        const token = await generateJwtDriver(userResponse.uid);
 
         let emailDecrypt = ""
         let phoneDecrypt = ""

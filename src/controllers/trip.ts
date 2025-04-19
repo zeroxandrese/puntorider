@@ -56,7 +56,7 @@ const tripPostController = async (req: any, res: Response) => {
 };
 
 const tripAcceptController = async (req: any, res: Response) => {
-    const uid = req.userAuth;
+    const { uid } = req.userAuthDriver;
     const id = req.params.id
 
     try {
@@ -68,7 +68,7 @@ const tripAcceptController = async (req: any, res: Response) => {
 
         };
 
-        const responseTripAccepted = await tripAcceptService({ driverId: uid.uid, tripId: id });
+        const responseTripAccepted = await tripAcceptService({ driverId: uid, tripId: id });
 
         res.status(201).json(responseTripAccepted)
 

@@ -14,7 +14,8 @@ const tripCalculatePostController = async (req: any, res: Response) => {
         discountCode,
         latitudeEnd,
         longitudeEnd,
-        paymentMethod
+        paymentMethod,
+        discountApplied
     } = req.body
 
     try {
@@ -35,6 +36,7 @@ const tripCalculatePostController = async (req: any, res: Response) => {
             latitudeStart,
             uid,
             discountCode,
+            discountApplied,
             longitudeStart,
             latitudeEnd,
             longitudeEnd,

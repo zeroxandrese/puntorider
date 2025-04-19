@@ -8,35 +8,52 @@ const referredCodeGetService = async ({ id }: genericIdProps) => {
 
     try {
 
-       const referredCodeResponseService = await prisma.referredCodeEnable.findMany({
-        where: { usersClientId: id }
+        const referredCodeResponseService = await prisma.referredCodeEnable.findMany({
+            where: { usersClientId: id }
         })
 
         return referredCodeResponseService
 
     } catch (err) {
         throw new Error("Error en el servicio del code referenciado");
-        
+
     }
 };
 
-const referredCodePostService = async ({ id, code, idreferenced }: referredCodeProps) => {
-
+const referredCodePostService = async ({ id, code }: referredCodeProps) => {
     try {
 
-       const referredCodeResponseService = await prisma.referredCodeUsed.create({
+        const codeParse = code.toLocaleUpperCase();
+
+        const validationCodeUsed = await prisma.referredCodeUsed.findFirst({
+            where: { usersClientId: id }
+        });
+   
+        if (validationCodeUsed) {
+            return { validationCodeUsed: false }
+        };
+
+        const validationCodeExists = await prisma.usersClient.findFirst({
+            where: { referralCode: codeParse }
+        });
+ 
+        if (!validationCodeExists) {
+            return { validationCodeUsed: false }
+        };
+
+        await prisma.referredCodeUsed.create({
             data: {
                 usersClientId: id,
-                usersClientReferencedId: idreferenced,
-                code
+                usersClientReferencedId: validationCodeExists.uid,
+                referralCode: codeParse
             }
         })
 
-        return referredCodeResponseService
+        return { validationCodeUsed: true }
 
     } catch (err) {
         throw new Error("Error en el servicio del code referenciado");
-        
+
     }
 };
 

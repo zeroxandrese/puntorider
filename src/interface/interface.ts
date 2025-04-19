@@ -137,6 +137,7 @@ export interface tripCalculateInterface {
   latitudeEnd: string;
   longitudeEnd: string;
   discountCode: string;
+  discountApplied: boolean;
   paymentMethod: string;
   uid: UserClient;
 }
@@ -175,8 +176,7 @@ export interface reportClientsPostProps {
 
 export interface referredCodeProps {
   id: string,
-  code: string,
-  idreferenced: string
+  code: string
 }
 
 export interface calculationEstimatedArrivalProps {
@@ -209,6 +209,12 @@ export interface phoneNumberProps {
 }
 
 export interface validationCodeProps {
+  uid: string
+  code: string,
+  codeSecurity: string,
+}
+
+export interface validationCodePropsGeneric {
   code: string,
   codeSecurity: string,
 }
@@ -235,5 +241,10 @@ export interface vehicle {
   year: number,
   register: string | null,
   color:string,
+}
+
+export interface contactUsProps{
+  uid: string,
+  comment: string
 }
 

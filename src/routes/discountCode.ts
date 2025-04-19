@@ -8,13 +8,11 @@ import validarJWT from "../middelware/validar-jwt";
 
 const router = Router();
 
-router.get("/:id",
+router.get("/",
     validarJWT,
-    check('id', 'El id no es valido').isMongoId(),
-    check('id').custom(findIdClient),
     discountCodeGetController);
 
-router.post("/", validarJWT, validarCampos, discountCodePostController);
+/* router.post("/", validarJWT, validarCampos, discountCodePostController);
 
 router.put("/:id", [
     validarJWT,
@@ -28,6 +26,6 @@ router.delete("/:id", [
     check('id', 'El id no es valido').isMongoId(),
     check('id').custom(findIdClient),
     validarCampos
-], discountCodeDeleteController);
+], discountCodeDeleteController); */
 
 export { router };

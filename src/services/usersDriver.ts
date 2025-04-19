@@ -5,20 +5,24 @@ import CryptoJS from 'crypto-js';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import { generateJwt } from '../helpers/generate-jwt';
+import { generateJwtDriver } from '../helpers/generate-jwt-driver';
 
 import { UserClientUID, UserDriverUpdate, DriverUserPost } from '../interface/interface';
 
 
 const prisma = new PrismaClient
 
+const encryptData = (data: string | number) => {
+    return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
+};
+
+const encryptPhone = (phone: string | number) => {
+    return CryptoJS.HmacSHA224(phone.toString(), process.env.secretKeyCrypto!).toString();
+};
+
 const decryptData = (encryptedPhone: string) => {
     const bytes = CryptoJS.AES.decrypt(encryptedPhone, process.env.secretKeyCrypto!);
     return bytes.toString(CryptoJS.enc.Utf8);
-};
-
-const encryptData = (data: string | number) => {
-    return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
 };
 
 
@@ -31,15 +35,16 @@ const usersDriverPostService = async ({ email, password }: DriverUserPost) => {
 
         const userResponseService = await prisma.usersDriver.create({
             data: {
-                email: encryptData(email) || "default@example.com",
+                email: encryptData(email) || encryptData("default@example.com"),
+                hashValidationEmail: encryptPhone(email),
                 password: hashedPassword
 
             }
         })
-        console.log(userResponseService);
+
         const { password: userPassword, ...sanitizedUser } = userResponseService;
 
-        const token = await generateJwt(userResponseService.uid);
+        const token = await generateJwtDriver(userResponseService.uid);
 
         return ({ user: sanitizedUser, token })
 

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { historyTripsClientGetGetService } from '../services/historyTripsClientService';
+import { historyTripsClientGetService } from '../services/historyTripsClientService';
 
 interface AuthenticatedRequest extends Request {
     userAuth: {
@@ -18,7 +18,7 @@ const historyTripsClientGetController = async (req: any, res: Response) => {
 
         };
 
-        const responseHistoryTripClient = await historyTripsClientGetGetService({ id: uid });
+        const responseHistoryTripClient = await historyTripsClientGetService({ id: uid });
 
         res.status(201).json(responseHistoryTripClient)
 

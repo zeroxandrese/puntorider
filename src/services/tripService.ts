@@ -31,10 +31,6 @@ const createTemporaryDriver = async (tripDataFind: any) => {
         longitude: tripDataFind.longitudeStart + lngOffset,
     };
 
-    console.log("🚗 Creando conductor temporal...");
-    console.log("driverId:", driverId?.uid);
-    console.log("Ubicación generada:", driverPosition);
-
     try {
         // Verificar conexión con Redis
         if (!redisClient.isOpen) {
@@ -83,8 +79,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
             return null;
         }
 
-        const driverId = await createTemporaryDriver(tripDataFind);
-        const testDriver = await redisClient.get(`positionDriver:${driverId}`);
+        await createTemporaryDriver(tripDataFind);
 
         // Obtener conductores disponibles
         const keys = await redisClient.keys('positionDriver:*');
@@ -109,7 +104,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
         );
 
         const validPositions = positions.filter((p) => p !== null) as { userId: string; position: { latitude: number; longitude: number } }[];
-        
+
 
         if (validPositions.length === 0) {
             console.error("No hay conductores disponibles en la zona.");
@@ -133,9 +128,6 @@ const tripPostService = async ({ id }: genericIdProps) => {
                 return { driver: driver.userId, distance, estimatedArrival };
             })
         );
-
-        console.log("📦 Distancias calculadas:");
-console.log(distances);
 
         // Filtrar conductores dentro del rango
         const reasonableDistance = 12; // en kilómetros
@@ -185,67 +177,70 @@ console.log(distances);
 
 const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripId: string }) => {
     try {
-      const pendingDriversStr = await redisClient.get(`pendingTrip:${tripId}`);
-      const pendingDrivers: string[] = pendingDriversStr ? JSON.parse(pendingDriversStr) : [];
-  
-      if (!pendingDrivers.includes(driverId)) {
-        return { success: false, message: "Este conductor no puede aceptar este viaje." };
-      }
-  
-      // Eliminar la key para evitar que otros acepten
-      await redisClient.del(`pendingTrip:${tripId}`);
-  
-      // Buscar los datos del viaje
-      const tripDataFind = await prisma.calculateTrip.findUnique({ where: { uid: tripId } });
-      if (!tripDataFind) return { success: false, message: "El viaje no existe." };
-  
-      const trip = await prisma.trip.create({
-        data: {
-          usersClientId: tripDataFind.usersClientId,
-          usersDriverId: driverId,
-          price: tripDataFind.price,
-          basePrice: tripDataFind.basePrice,
-          paymentMethod: tripDataFind.paymentMethod,
-          kilometers: tripDataFind.kilometers,
-          latitudeStart: tripDataFind.latitudeStart,
-          longitudeStart: tripDataFind.longitudeStart,
-          latitudeEnd: tripDataFind.latitudeEnd,
-          longitudeEnd: tripDataFind.longitudeEnd,
-          addressStart: tripDataFind.addressStart,
-          addressEnd: tripDataFind.addressEnd,
-          hourStart: tripDataFind.hourScheduledStart,
-          estimatedArrival: tripDataFind.estimatedArrival,
-          discountCode: tripDataFind.discountCode,
-          discountApplied: tripDataFind.discountApplied,
+        const pendingDriversStr = await redisClient.get(`pendingTrip:${tripId}`);
+        const pendingDrivers: string[] = pendingDriversStr ? JSON.parse(pendingDriversStr) : [];
+
+        const cleanDriverId = String(driverId).trim();
+
+        if (!pendingDrivers.includes(cleanDriverId)) {
+          return { success: false, message: "Este conductor no puede aceptar este viaje." };
         }
-      });
-  
-      await prisma.calculateTrip.update({
-        where: { uid: tripId },
-        data: { status: false }
-      });
-  
-      // Notificaciones
-      const driverData = await prisma.usersDriver.findFirst({ where: { uid: driverId } });
-      const vehicleData = await prisma.vehicles.findFirst({ where: { usersDriverId: driverId } });
-  
-      io.to(tripDataFind.usersClientId).emit("trip_accepted", {
-        trip,
-        driver: driverData,
-        vehicle: vehicleData,
-      });
-  
-      io.to(driverId).emit("trip_assigned", {
-        trip,
-      });
-  
-      return { success: true, trip };
-  
+
+        // Eliminar la key para evitar que otros acepten
+        await redisClient.del(`pendingTrip:${tripId}`);
+
+        // Buscar los datos del viaje
+        const tripDataFind = await prisma.calculateTrip.findUnique({ where: { uid: tripId } });
+        if (!tripDataFind) return { success: false, message: "El viaje no existe." };
+
+        const trip = await prisma.trip.create({
+            data: {
+                usersClientId: tripDataFind.usersClientId,
+                usersDriverId: driverId,
+                price: tripDataFind.price,
+                priceWithDiscount: tripDataFind.priceWithDiscount,
+                basePrice: tripDataFind.basePrice,
+                paymentMethod: tripDataFind.paymentMethod,
+                kilometers: tripDataFind.kilometers,
+                latitudeStart: tripDataFind.latitudeStart,
+                longitudeStart: tripDataFind.longitudeStart,
+                latitudeEnd: tripDataFind.latitudeEnd,
+                longitudeEnd: tripDataFind.longitudeEnd,
+                addressStart: tripDataFind.addressStart,
+                addressEnd: tripDataFind.addressEnd,
+                hourStart: tripDataFind.hourScheduledStart,
+                estimatedArrival: tripDataFind.estimatedArrival,
+                discountCode: tripDataFind.discountCode,
+                discountApplied: tripDataFind.discountApplied,
+            }
+        });
+
+        await prisma.calculateTrip.update({
+            where: { uid: tripId },
+            data: { status: false }
+        });
+
+        // Notificaciones
+        const driverData = await prisma.usersDriver.findFirst({ where: { uid: driverId } });
+        const vehicleData = await prisma.vehicles.findFirst({ where: { usersDriverId: driverId } });
+
+        io.to(tripDataFind.usersClientId).emit("trip_accepted", {
+            trip,
+            driver: driverData,
+            vehicle: vehicleData,
+        });
+
+        io.to(driverId).emit("trip_assigned", {
+            trip,
+        });
+
+        return { success: true, trip };
+
     } catch (err: any) {
-      console.error("Error al aceptar el viaje:", err.message);
-      return { success: false, message: "Error interno." };
+        console.error("Error al aceptar el viaje:", err.message);
+        return { success: false, message: "Error interno." };
     }
-  };
+};
 
 const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProps) => {
 

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
 import { verifyToken } from "../services/authService";
-import { googleLogin, login } from "../services/authService";
+import { googleLogin } from "../services/authService";
 
 const verifyTokenController = async (req: any, res: Response) => {
     const uid = req.userAuth;
@@ -49,7 +49,8 @@ const googleLoginController = async (req: Request, res: Response) => {
 
 };
 
-const loginController = async (req: Request, res: Response) => {
+//Controllador no funcional comentado por (ANDRES)
+/* const loginController = async (req: Request, res: Response) => {
     const { numberPhone } = req.body
 
     try {
@@ -70,7 +71,7 @@ const loginController = async (req: Request, res: Response) => {
 
     }
 
-};
+}; */
 
 
-export { verifyTokenController, googleLoginController, loginController };
+export { verifyTokenController, googleLoginController };

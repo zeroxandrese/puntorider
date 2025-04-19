@@ -31,4 +31,4 @@ app.use(router);
 initSocketio(server);
 
 dbConection().then(()=>console.log('BD Conectada al Server Transportia😎'));
-app.listen(PORT, ()=> console.log(`Conectados desde el puerto ${PORT}`))
+server.listen(PORT, () => console.log(`🚀 Server escuchando en puerto ${PORT}`));

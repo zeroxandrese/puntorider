@@ -17,12 +17,14 @@ model UsersClient {
   uid                 String   @id @default(auto()) @map("_id") @db.ObjectId
   name                String   @default("Aliado")
   numberPhone         String?  @default("0")
-  hashValitadionPhone String?  @default("0")
+  hashValidationPhone String?
   email               String?  @default("default@example.com")
+  hashValidationEmail String?
   status              Boolean  @default(true)
   google              Boolean  @default(false)
   img                 String?
   googleUserId        String?
+  referralCode        String?
   created             DateTime @default(now())
 
   userLevels            UserLevel[]           @relation("UserClientLevels")
@@ -40,6 +42,7 @@ model UsersClient {
   referredCodeEnable    ReferredCodeEnable[]  @relation("UserClientReferredCodeEnable")
   referredCodeSender    ReferredCodeUsed[]    @relation("UserClientSenderCodeRef")
   shipmentItem          ShipmentItem[]        @relation("UserClientShipmentItem")
+  ContactUs             ContactUs[]           @relation("UserClientContacUs")
 
   @@map("usersClient")
 }
@@ -58,26 +61,29 @@ model UserLevel {
 }
 
 model UsersDriver {
-  uid         String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   @default("Aliado")
-  lastName    String?
-  numberPhone String   @default("0")
-  email       String
-  password    String
-  status      Boolean  @default(true)
-  google      Boolean  @default(false)
-  img         String?
-  profile     Profile  @default(DRIVER)
-  created     DateTime @default(now())
+  uid                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                String   @default("Aliado")
+  lastName            String?
+  hashValidationEmail String?
+  email               String
+  numberPhone         String?  @default("0")
+  hashValidationPhone String?
+  password            String
+  status              Boolean  @default(true)
+  google              Boolean  @default(false)
+  img                 String?
+  profile             Profile  @default(DRIVER)
+  created             DateTime @default(now())
 
-  driverLevels       DriversLevel[]        @relation("UserDriverLevels")
-  vehicle            Vehicles[]            @relation("VehicleDriver")
-  commentsDriver     CommentsDriver[]      @relation("UserDriverComment")
-  trip               Trip[]                @relation("UserDriverTrip")
-  reportDriver       ReportDriver[]        @relation("UserDriverReport")
-  historyTripsDriver HistoryTripsDriver[]  @relation("UserDriverHistoryTrip")
-  notifications      NotificationsDriver[] @relation("UserDriverNotification")
-  shipment           Shipment[]            @relation("UserDriverShipment")
+  driverLevels        DriversLevel[]        @relation("UserDriverLevels")
+  vehicle             Vehicles[]            @relation("VehicleDriver")
+  commentsDriver      CommentsDriver[]      @relation("UserDriverComment")
+  trip                Trip[]                @relation("UserDriverTrip")
+  reportDriver        ReportDriver[]        @relation("UserDriverReport")
+  historyTripsDriver  HistoryTripsDriver[]  @relation("UserDriverHistoryTrip")
+  notifications       NotificationsDriver[] @relation("UserDriverNotification")
+  shipment            Shipment[]            @relation("UserDriverShipment")
+  tripCancelForDriver TripCancelForDriver[] @relation("TripCancelDriverID")
 
   @@map("usersDriver")
 }
@@ -104,9 +110,9 @@ model Vehicles {
   brand         String
   year          Int         @default(0)
   color         String
-  cargo         Boolean?     @default(false)
-  shipment      Boolean?     @default(false)
-  status        Boolean?     @default(true)
+  cargo         Boolean?    @default(false)
+  shipment      Boolean?    @default(false)
+  status        Boolean?    @default(true)
 
   @@index([usersDriverId])
   @@map("vehicles")
@@ -139,36 +145,38 @@ model CommentsDriver {
 }
 
 model Trip {
-  uid              String      @id @default(auto()) @map("_id") @db.ObjectId
-  usersClientId    String      @db.ObjectId
-  usersClient      UsersClient @relation("UserClientTrip", fields: [usersClientId], references: [uid])
-  usersDriverId    String      @db.ObjectId
-  usersDriver      UsersDriver @relation("UserDriverTrip", fields: [usersDriverId], references: [uid])
-  complete         Boolean     @default(false)
-  paid             Boolean     @default(false)
-  price            Float       @default(0)
-  basePrice        Float       @default(0)
-  paymentMethod    String
-  kilometers       Float       @default(0)
-  latitudeStart    Float       @default(0)
-  longitudeStart   Float       @default(0)
-  latitudeEnd      Float       @default(0)
-  longitudeEnd     Float       @default(0)
-  addressStart     String
-  addressEnd       String
-  hourStart        String
-  hourEnd          String?
-  estimatedArrival String
-  discountCode     String?
-  discountApplied  Boolean?    @default(false)
-  status           Boolean     @default(true)
-  created          DateTime    @default(now())
-  cancelForUser    Boolean     @default(false)
+  uid               String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId     String      @db.ObjectId
+  usersClient       UsersClient @relation("UserClientTrip", fields: [usersClientId], references: [uid])
+  usersDriverId     String      @db.ObjectId
+  usersDriver       UsersDriver @relation("UserDriverTrip", fields: [usersDriverId], references: [uid])
+  complete          Boolean     @default(false)
+  paid              Boolean     @default(false)
+  price             Float       @default(0)
+  priceWithDiscount Float?
+  basePrice         Float       @default(0)
+  paymentMethod     String
+  kilometers        Float       @default(0)
+  latitudeStart     Float       @default(0)
+  longitudeStart    Float       @default(0)
+  latitudeEnd       Float       @default(0)
+  longitudeEnd      Float       @default(0)
+  addressStart      String
+  addressEnd        String
+  hourStart         String
+  hourEnd           String?
+  estimatedArrival  String
+  discountCode      String?
+  discountApplied   Boolean?    @default(false)
+  status            Boolean     @default(true)
+  created           DateTime    @default(now())
+  cancelForUser     Boolean     @default(false)
 
-  commentsClient     CommentsClient[]     @relation("tripCommentClient")
-  commentsDriver     CommentsDriver[]     @relation("tripCommentDriver")
-  historyTripsClient HistoryTripsClient[] @relation("TripHistoryClient")
-  HistoryTripsDriver HistoryTripsDriver[] @relation("TripHistoryDriver")
+  commentsClient      CommentsClient[]      @relation("tripCommentClient")
+  commentsDriver      CommentsDriver[]      @relation("tripCommentDriver")
+  historyTripsClient  HistoryTripsClient[]  @relation("TripHistoryClient")
+  historyTripsDriver  HistoryTripsDriver[]  @relation("TripHistoryDriver")
+  tripCancelForDriver TripCancelForDriver[] @relation("TripIDCancelForDriver")
 
   @@index([usersDriverId, usersClientId])
   @@map("trip")
@@ -180,6 +188,8 @@ model DiscountCode {
   usersClient   UsersClient @relation("UserClientCode", fields: [usersClientId], references: [uid])
   code          String
   percentage    Int
+  description   String?
+  expiryDate    DateTime    @default(now())
   status        Boolean     @default(true)
   created       DateTime    @default(now())
 
@@ -282,9 +292,10 @@ model HistoryTripsClient {
   addressStart    String
   addressEnd      String
   hourStart       String
-  hourEnd         String
+  hourEnd         String?
   discountCode    String?
   discountApplied Boolean?    @default(false)
+  cancelForUser   Boolean     @default(false)
   created         DateTime    @default(now())
 
   @@index([usersClientId, tripId])
@@ -417,6 +428,7 @@ model CalculateTrip {
   usersClientId      String      @db.ObjectId
   usersClient        UsersClient @relation("CalculateUserTrip", fields: [usersClientId], references: [uid])
   price              Float       @default(0)
+  priceWithDiscount  Float?
   basePrice          Float       @default(0)
   paymentMethod      String
   kilometers         Float       @default(0)
@@ -446,7 +458,7 @@ model ReferredCodeUsed {
   usersClient             UsersClient @relation("UserClientSenderCodeRef", fields: [usersClientId], references: [uid])
   usersClientReferencedId String      @db.ObjectId
   usersClientReferenced   UsersClient @relation("UserClientReferenceCode", fields: [usersClientReferencedId], references: [uid])
-  code                    String
+  referralCode            String
   status                  Boolean     @default(true)
   created                 DateTime    @default(now())
 
@@ -487,4 +499,29 @@ model PriceBaseTrip {
 
   @@index([status])
   @@map("priceBaseTrip")
+}
+
+model ContactUs {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientContacUs", fields: [usersClientId], references: [uid])
+  comment       String
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([status])
+  @@map("contactUs")
+}
+
+model TripCancelForDriver {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId String      @db.ObjectId
+  usersDriver   UsersDriver @relation("TripCancelDriverID", fields: [usersDriverId], references: [uid])
+  tripId        String      @db.ObjectId
+  trip          Trip        @relation("TripIDCancelForDriver", fields: [tripId], references: [uid])
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([status])
+  @@map("tripCancelForDriver")
 }

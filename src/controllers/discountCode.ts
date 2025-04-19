@@ -7,20 +7,20 @@ interface AuthenticatedRequest extends Request {
     }
 };
 
-const discountCodeGetController = async (req: Request, res: Response) => {
-    const id = req.params.id;
+const discountCodeGetController = async (req: any, res: Response) => {
+    const { uid } = req.userAuth;
 
     try {
-        if ( !id || id === "") {
+        if ( !uid || uid === "") {
             res.status(401).json({
                 msg: "Información faltante"
             });
 
         };
 
-        const responseComment = await discountCodeGetService({ id });
+        const responsediscountCode = await discountCodeGetService({ id: uid.uid });
 
-        res.status(201).json(responseComment)
+        res.status(201).json(responsediscountCode)
 
     } catch (error) {
         res.sendStatus(501)
@@ -41,9 +41,9 @@ const discountCodePostController = async (req: Request, res: Response) => {
 
         };
 
-        const responseComment = await discountCodePostService({ percentage, usersClientId, code });
+        const responsediscountCode = await discountCodePostService({ percentage, usersClientId, code });
 
-        res.status(201).json(responseComment)
+        res.status(201).json(responsediscountCode)
 
     } catch (error) {
         res.sendStatus(501)
@@ -65,9 +65,9 @@ const discountCodePutController = async (req: any, res: Response) => {
 
         };
 
-        const responseComment = await discountCodePutService({ percentage, usersClientId, code, id });
+        const responsediscountCode = await discountCodePutService({ percentage, usersClientId, code, id });
 
-        res.status(201).json(responseComment)
+        res.status(201).json(responsediscountCode)
 
     } catch (error) {
         res.sendStatus(501)
@@ -87,9 +87,9 @@ const discountCodeDeleteController = async (req: Request, res: Response) => {
             });
         }
 
-        const responseComment = await discountCodeDeleteService({ id });
+        const responsediscountCode = await discountCodeDeleteService({ id });
 
-        res.status(201).json(responseComment)
+        res.status(201).json(responsediscountCode)
 
     } catch (error) {
         res.sendStatus(501)
