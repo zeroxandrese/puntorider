@@ -11,7 +11,7 @@ const historyTripsClientGetService = async ({ id }: genericIdProps) => {
         if (!id) {
             throw new Error("El UID es obligatorio para buscar el historico de viaje.");
         }
-
+console.log(id)
        const historyTripsClientResponseService = await prisma.historyTripsClient.findMany({
         where: { usersClientId: id }
         })

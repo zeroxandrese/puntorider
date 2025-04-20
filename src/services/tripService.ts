@@ -183,15 +183,32 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
         const cleanDriverId = String(driverId).trim();
 
         if (!pendingDrivers.includes(cleanDriverId)) {
-          return { success: false, message: "Este conductor no puede aceptar este viaje." };
+            return { success: false, message: "Este conductor no puede aceptar este viaje." };
         }
 
         // Eliminar la key para evitar que otros acepten
         await redisClient.del(`pendingTrip:${tripId}`);
 
         // Buscar los datos del viaje
-        const tripDataFind = await prisma.calculateTrip.findUnique({ where: { uid: tripId } });
+        const tripDataFind = await prisma.calculateTrip.findUnique({ where: { uid: tripId, status: true } });
         if (!tripDataFind) return { success: false, message: "El viaje no existe." };
+
+        if (tripDataFind.discountCode) {
+            const discount = await prisma.discountCode.findFirst({
+                where: {
+                    usersClientId: tripDataFind.usersClientId,
+                    code: tripDataFind.discountCode,
+                    status: true
+                },
+            });
+
+            if (discount) {
+                await prisma.discountCode.update({
+                    where: { uid: discount.uid },
+                    data: { status: false },
+                });
+            }
+        };
 
         const trip = await prisma.trip.create({
             data: {
@@ -211,7 +228,7 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
                 hourStart: tripDataFind.hourScheduledStart,
                 estimatedArrival: tripDataFind.estimatedArrival,
                 discountCode: tripDataFind.discountCode,
-                discountApplied: tripDataFind.discountApplied,
+                discountApplied: tripDataFind.discountApplied
             }
         });
 
@@ -234,6 +251,35 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             trip,
         });
 
+        return { success: true, trip };
+
+    } catch (err: any) {
+        console.error("Error al aceptar el viaje:", err.message);
+        return { success: false, message: "Error interno." };
+    }
+};
+
+const tripDriverArrivedService = async ({ driverId, tripId }: { driverId: string; tripId: string }) => {
+    try {
+
+        const tripDataFind = await prisma.trip.findUnique({ where: { uid: tripId, usersDriverId: driverId, status: true } });
+        if (!tripDataFind) return { success: false, message: "El viaje no existe." };
+
+        const trip = await prisma.trip.update({
+            where: { uid: tripId, usersDriverId: driverId, status: true },
+            data: {
+                driverArrived: true
+            }
+        });
+
+        io.to(tripDataFind.usersClientId).emit("trip_driverArrived", {
+            trip
+        });
+
+        io.to(driverId).emit("trip_driverArrived", {
+            trip,
+        });
+console.log(trip)
         return { success: true, trip };
 
     } catch (err: any) {
@@ -348,4 +394,8 @@ const tripDeleteService = async ({ id }: tripDeleteProps) => {
     }
 };
 
-export { tripPostService, tripPutService, tripDeleteService, tripGetService, tripAcceptService };
+export {
+    tripPostService, tripPutService,
+    tripDeleteService, tripGetService,
+    tripAcceptService, tripDriverArrivedService
+};

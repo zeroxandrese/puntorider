@@ -57,7 +57,7 @@ const tripCalculatePostService = async ({
         latitudeEndParse,
         longitudeEndParse
     );
-    
+
     // límite de 100 km
     const MAX_DISTANCE_KM = 100;
 
@@ -90,23 +90,23 @@ const tripCalculatePostService = async ({
     totalPriceOriginla = roundToNextHalfOrWhole(totalPriceOriginla);
 
     let wasDiscountApplied = false;
-    let totalPrice = 0;
+    let totalPriceWithDiscount = totalPriceOriginla;
 
     // Validación del código de descuento
     if (discountCode) {
-      const responseDiscountCode = await prisma.discountCode.findFirst({
-        where: { code: discountCode, usersClientId: uid.uid },
-      });
-  
-      if (responseDiscountCode) {
-        const discountPercentage = responseDiscountCode.percentage || 0;
-        const discountAmount = (totalPrice * discountPercentage) / 100;
-        totalPrice -= discountAmount;
-        totalPrice = roundToNextHalfOrWhole(totalPrice);
-        wasDiscountApplied = true;
-      } else {
-        console.error("Código de descuento no válido");
-      }
+        const responseDiscountCode = await prisma.discountCode.findFirst({
+            where: { code: discountCode, usersClientId: uid.uid },
+        });
+
+        if (responseDiscountCode) {
+            const discountPercentage = responseDiscountCode.percentage || 0;
+            const discountAmount = (totalPriceOriginla * discountPercentage) / 100;
+            totalPriceWithDiscount = totalPriceOriginla - discountAmount;
+            totalPriceWithDiscount = roundToNextHalfOrWhole(totalPriceWithDiscount);
+            wasDiscountApplied = true;
+        } else {
+            console.error("Código de descuento no válido");
+        }
     }
 
     const resAddressStart = await geocoder.reverse({ lat: latitudeStartParse, lon: longitudeStartParse });
@@ -129,12 +129,15 @@ const tripCalculatePostService = async ({
                 status: true
             }
         });
-    }
+    };
+
+    const finalPriceWithDiscount = wasDiscountApplied ? totalPriceWithDiscount : 0;
+
     const responseCalculeTrip = prisma.calculateTrip.create({
         data: {
             usersClientId: uid.uid,
             price: totalPriceOriginla,
-            priceWithDiscount: totalPrice || null,
+            priceWithDiscount: finalPriceWithDiscount,
             basePrice: basePricePerKmBase?.price!,
             paymentMethod: paymentMethod,
             kilometers: distance.distance,

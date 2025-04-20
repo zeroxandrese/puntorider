@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { check } from 'express-validator';
 
-import { tripPostController, tripPutController, tripDeleteController, tripGetController, tripAcceptController } from "../controllers/trip";
+import {
+    tripPostController, tripPutController,
+    tripDeleteController, tripGetController,
+    tripAcceptController, tripDriverArrivedController
+} from "../controllers/trip";
 import { validarCampos } from "../middelware/validar-campos";
 import { findTrip } from "../helpers/db-validators";
 import validarJWT from "../middelware/validar-jwt";
@@ -17,18 +21,20 @@ router.post("/", validarJWT, tripPostController);
 
 router.post("/driverAccepted/:id", validarJWTDriver, tripAcceptController);
 
+router.post("/driverArrived/:id", validarJWTDriver, tripDriverArrivedController);
+
 router.put("/:id", [
     validarJWT,
     check('id', 'El id no es valido').isMongoId(),
     check('id').custom(findTrip),
     validarCampos
-],tripPutController);
+], tripPutController);
 
 router.delete("/:id", [
     validarJWT,
     check('id', 'El id no es valido').isMongoId(),
     check('id').custom(findTrip),
     validarCampos
-],tripDeleteController);
+], tripDeleteController);
 
 export { router };

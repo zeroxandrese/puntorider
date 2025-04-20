@@ -13,7 +13,7 @@ const discountCodeGetService = async ({ id }: genericIdProps) => {
     try {
 
        const discountCodeResponseService = await prisma.discountCode.findMany({
-        where: { usersClientId: id }
+        where: { usersClientId: id, status: true }
         })
 
         return discountCodeResponseService

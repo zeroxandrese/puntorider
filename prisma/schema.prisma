@@ -168,6 +168,8 @@ model Trip {
   estimatedArrival  String
   discountCode      String?
   discountApplied   Boolean?    @default(false)
+  driverArrived     Boolean?    @default(false)
+  tripStarted       Boolean?    @default(false)
   status            Boolean     @default(true)
   created           DateTime    @default(now())
   cancelForUser     Boolean     @default(false)
@@ -193,7 +195,7 @@ model DiscountCode {
   status        Boolean     @default(true)
   created       DateTime    @default(now())
 
-  @@index([usersClientId])
+  @@index([usersClientId, code])
   @@map("discountCode")
 }
 

@@ -18,7 +18,7 @@ const discountCodeGetController = async (req: any, res: Response) => {
 
         };
 
-        const responsediscountCode = await discountCodeGetService({ id: uid.uid });
+        const responsediscountCode = await discountCodeGetService({ id: uid });
 
         res.status(201).json(responsediscountCode)
 
