@@ -279,7 +279,7 @@ const tripDriverArrivedService = async ({ driverId, tripId }: { driverId: string
         io.to(driverId).emit("trip_driverArrived", {
             trip,
         });
-console.log(trip)
+
         return { success: true, trip };
 
     } catch (err: any) {

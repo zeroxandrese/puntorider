@@ -16,8 +16,6 @@ const calculateDistance = async (lat1: number, lon1: number, lat2: number, lon2:
             const distanceText: string = data.rows[0].elements[0].distance.text;
             const duration = data.rows[0].elements[0].duration.text;
 
-            console.log(distanceText);
-
             let distanceValue: number;
 
             if (distanceText.includes('km')) {
