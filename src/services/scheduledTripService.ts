@@ -49,7 +49,8 @@ const scheduledTripPostService = async ({ id }: genericIdProps) => {
                 hourScheduledStart: tripDataFind.hourScheduledStart,
                 hourScheduledEnd: tripDataFind.hourScheduledEnd,
                 discountCode: tripDataFind.discountCode,
-                discountApplied: tripDataFind.discountApplied
+                discountApplied: tripDataFind.discountApplied,
+                estimatedArrival: tripDataFind.estimatedArrival
             }
         });
 

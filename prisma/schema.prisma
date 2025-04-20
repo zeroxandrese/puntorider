@@ -165,7 +165,7 @@ model Trip {
   addressEnd        String
   hourStart         String
   hourEnd           String?
-  estimatedArrival  String
+  estimatedArrival  String?
   discountCode      String?
   discountApplied   Boolean?    @default(false)
   driverArrived     Boolean?    @default(false)
@@ -240,7 +240,7 @@ model ScheduledTrip {
   dateScheduled      DateTime
   hourScheduledStart String
   hourScheduledEnd   String?
-  estimatedArrival   String
+  estimatedArrival   String?
   discountCode       String?
   discountApplied    Boolean?    @default(false)
   cancelForUser      Boolean     @default(false)
@@ -443,7 +443,7 @@ model CalculateTrip {
   dateScheduled      DateTime
   hourScheduledStart String
   hourScheduledEnd   String?
-  estimatedArrival   String
+  estimatedArrival   String?
   scheduledStatus    Boolean     @default(false)
   discountCode       String?
   discountApplied    Boolean?    @default(false)
