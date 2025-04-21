@@ -6,7 +6,7 @@ import { dbConection } from "./config/dbcontection";
 import { router } from "./routes";
 import path from "path";
 
-import { initSocketio } from "../src/utils/initSocket";
+import { initSocketio } from "./utils/initSocket";
 
 const PORT = process.env.PORT || 3001;
 
