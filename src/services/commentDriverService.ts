@@ -1,14 +1,21 @@
 import { PrismaClient } from "@prisma/client";
 
+import { getSocketIO } from "../utils/initSocket";
 import { commentsDriverProps, commentsClientsPutProps, commentsClientsDeleteProps, genericIdProps } from '../interface/interface'
 
+const io = getSocketIO();
 const prisma = new PrismaClient
 
 const commentDriverGetService = async ({ id }: genericIdProps) => {
 
     try {
 
-       const commentResponseService = await prisma.commentsDriver.findMany({ where: { usersDriverId: id } });
+        const commentClientResponseService = await prisma.commentsClient.findMany({ where: { tripId: id, status: true } });
+        const commentDriverResponseService = await prisma.commentsDriver.findMany({ where: { tripId: id, status: true } });
+
+        const commentResponseService = [...commentClientResponseService, ...commentDriverResponseService];
+
+        commentResponseService.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
 
         return commentResponseService
 
@@ -25,10 +32,12 @@ const commentDriverPostService = async ({ comment, usersDriverId, tripId }: comm
        const commentResponseService = await prisma.commentsDriver.create({
             data: {
                 comment,
-                usersDriverId,
+                usersId: usersDriverId,
                 tripId
             }
-        })
+        });
+
+        io.to(tripId).emit('new-comment', comment);
 
         return commentResponseService
 

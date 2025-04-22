@@ -7,7 +7,7 @@ interface AuthenticatedRequest extends Request {
     }
 }
 
-const commentClientGetController = async (req: Request, res: Response) => {
+const commentClientGetController = async (req: any, res: Response) => {
     const id = req.params.id;
 
     try {
@@ -18,9 +18,9 @@ const commentClientGetController = async (req: Request, res: Response) => {
 
         };
 
-        const responsePositionDriver = await commentClientGetService({ id });
+        const responseComment = await commentClientGetService({ id });
 
-        res.status(201).json(responsePositionDriver)
+        res.status(201).json(responseComment)
 
     } catch (error) {
         res.sendStatus(501)
@@ -30,18 +30,20 @@ const commentClientGetController = async (req: Request, res: Response) => {
 
 };
 
-const commentClientPostController = async (req: Request, res: Response) => {
-    const { comment, usersClientId, tripId } = req.body
+const commentClientPostController = async (req: any, res: Response) => {
+    const id = req.params.id;
+    const { comment } = req.body
+    const { uid } = req.userAuth;
 
     try {
-        if (!comment || comment === "" || !usersClientId || usersClientId === "" || !tripId || tripId === "") {
+        if (!comment || comment === "" || !id || id === "") {
             res.status(401).json({
                 msg: "Información faltante"
             });
 
         };
 
-        const responseComment = await commentClientPostService({ comment, usersClientId, tripId });
+        const responseComment = await commentClientPostService({ comment, usersClientId: uid, tripId: id });
 
         res.status(201).json(responseComment)
 

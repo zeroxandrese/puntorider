@@ -30,18 +30,20 @@ const commentDriverGetController = async (req: Request, res: Response) => {
 
 };
 
-const commentDriverPostController = async (req: Request, res: Response) => {
-    const { comment, usersDriverId, tripId } = req.body
+const commentDriverPostController = async (req: any, res: Response) => {
+    const id = req.params.id;
+    const { comment } = req.body
+    const { uid } = req.userAuthDriver;
 
     try {
-        if (!comment || comment === "" || !usersDriverId || usersDriverId === "" || !tripId || tripId === "") {
+        if (!comment || comment === "" || !id || id === "") {
             res.status(401).json({
                 msg: "Información faltante"
             });
 
         };
 
-        const responseComment = await commentDriverPostService({ comment, usersDriverId, tripId });
+        const responseComment = await commentDriverPostService({ comment, usersDriverId: uid, tripId: id });
 
         res.status(201).json(responseComment)
 

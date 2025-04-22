@@ -14,9 +14,17 @@ export const initSocketio = (server: HttpServer) => {
   io.on("connection", (socket) => {
     console.log("🧠 Cliente conectado:", socket.id);
 
-    socket.on("message", (data) => {
-      console.log("📩 Mensaje recibido:", data);
-      io.emit("message", data);
+    //sala para viajes confirmados
+    socket.on("confirm-trip", ({ tripId }) => {
+      socket.join(tripId);
+      console.log(`Usuario unido a la sala del viaje: ${tripId}`);
+
+      //io.to(tripId).emit('trip-started', { message: 'El viaje ha comenzado' });
+    });
+
+    // Para comentarios
+    socket.on('new-comment', ({ tripId, comment }) => {
+      io.to(tripId).emit('new-comment', comment);
     });
 
     socket.on("join", (uid: string) => {

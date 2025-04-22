@@ -119,28 +119,30 @@ model Vehicles {
 }
 
 model CommentsClient {
-  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
-  usersClientId String      @db.ObjectId
-  usersClient   UsersClient @relation("UserClientComment", fields: [usersClientId], references: [uid])
-  tripId        String      @db.ObjectId
-  trip          Trip        @relation("tripCommentClient", fields: [tripId], references: [uid])
-  comment       String
-  status        Boolean     @default(true)
+  uid     String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersId String      @db.ObjectId
+  users   UsersClient @relation("UserClientComment", fields: [usersId], references: [uid])
+  tripId  String      @db.ObjectId
+  trip    Trip        @relation("tripCommentClient", fields: [tripId], references: [uid])
+  comment String
+  status  Boolean     @default(true)
+  created DateTime    @default(now())
 
-  @@index([usersClientId])
+  @@index([usersId])
   @@map("commentsClient")
 }
 
 model CommentsDriver {
-  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
-  usersDriverId String      @db.ObjectId
-  usersDriver   UsersDriver @relation("UserDriverComment", fields: [usersDriverId], references: [uid])
-  tripId        String      @db.ObjectId
-  trip          Trip        @relation("tripCommentDriver", fields: [tripId], references: [uid])
-  comment       String
-  status        Boolean     @default(true)
+  uid     String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersId String      @db.ObjectId
+  users   UsersDriver @relation("UserDriverComment", fields: [usersId], references: [uid])
+  tripId  String      @db.ObjectId
+  trip    Trip        @relation("tripCommentDriver", fields: [tripId], references: [uid])
+  comment String
+  status  Boolean     @default(true)
+  created DateTime    @default(now())
 
-  @@index([usersDriverId])
+  @@index([usersId])
   @@map("commentsDriver")
 }
 
