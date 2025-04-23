@@ -40,7 +40,7 @@ const commentDriverPostController = async (req: any, res: Response) => {
             res.status(401).json({
                 msg: "Información faltante"
             });
-
+            return;
         };
 
         const responseComment = await commentDriverPostService({ comment, usersDriverId: uid, tripId: id });

@@ -36,11 +36,12 @@ const commentClientPostController = async (req: any, res: Response) => {
     const { uid } = req.userAuth;
 
     try {
+
         if (!comment || comment === "" || !id || id === "") {
             res.status(401).json({
                 msg: "Información faltante"
             });
-
+            return;
         };
 
         const responseComment = await commentClientPostService({ comment, usersClientId: uid, tripId: id });
