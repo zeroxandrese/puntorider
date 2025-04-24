@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { tripPostService, tripPutService, 
     tripDeleteService, tripGetService, 
-    tripAcceptService, tripDriverArrivedService } from '../services/tripService';
+    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService } from '../services/tripService';
 
 interface AuthenticatedRequest extends Request {
     userAuth: {
@@ -73,6 +73,31 @@ const tripAcceptController = async (req: any, res: Response) => {
         const responseTripAccepted = await tripAcceptService({ driverId: uid, tripId: id });
 
         res.status(201).json(responseTripAccepted)
+
+    } catch (error) {
+        res.sendStatus(501)
+        throw new Error("Problemas con el registro, comunicate con el admin");
+
+    }
+
+};
+
+const startTripAndUpdateRouteController = async (req: any, res: Response) => {
+    const { uid } = req.userAuthDriver;
+    const id = req.params.id
+
+    try {
+        if (
+            !uid || uid === "") {
+            res.status(401).json({
+                msg: "Información faltante"
+            });
+
+        };
+
+        const responsestartTripAndUpdateRoute = await startTripAndUpdateRouteService({ driverId: uid, tripId: id });
+
+        res.status(201).json(responsestartTripAndUpdateRoute)
 
     } catch (error) {
         res.sendStatus(501)
@@ -155,4 +180,4 @@ const tripDeleteController = async (req: Request, res: Response) => {
 
 export { tripPostController, tripPutController, 
     tripDeleteController, tripGetController, 
-    tripAcceptController, tripDriverArrivedController };
+    tripAcceptController, tripDriverArrivedController, startTripAndUpdateRouteController };

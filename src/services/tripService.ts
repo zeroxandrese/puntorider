@@ -4,6 +4,7 @@ import { getSocketIO } from "../utils/initSocket";
 
 import { genericIdProps, tripPutProps, tripDeleteProps, userDriver, vehicle } from '../interface/interface';
 import { calculateDistance } from '../utils/calculateDistance';
+import { orsCalculateDistance } from "../utils/orsDistance";
 
 const io = getSocketIO();
 
@@ -251,6 +252,18 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             trip,
         });
 
+        // OpenSourceOrute para obtener Polyline
+        const { distance, duration, polyline } = await orsCalculateDistance(
+            trip.latitudeStart,
+            trip.longitudeStart,
+            trip.latitudeEnd,
+            trip.longitudeEnd
+        );
+
+        // notificación conductor y cliente
+        io.to(driverId).emit("driver_route_accepted", { polyline  });
+        io.to(trip.usersClientId).emit("client_route_accepted", { polyline });
+
         return { success: true, trip };
 
     } catch (err: any) {
@@ -286,6 +299,31 @@ const tripDriverArrivedService = async ({ driverId, tripId }: { driverId: string
         console.error("Error al aceptar el viaje:", err.message);
         return { success: false, message: "Error interno." };
     }
+};
+
+const startTripAndUpdateRouteService = async ({ driverId, tripId }: { driverId: string; tripId: string }) => {
+    const tripData = await prisma.trip.findUnique({ where: { uid: tripId, usersDriverId: driverId, status: true } });
+    if (!tripData) {
+        console.error("No se encontró el viaje.");
+        return;
+    };
+
+    await prisma.trip.update({
+        where: { uid: tripData.uid },
+        data: { tripStarted: true }
+    })
+
+    // OpenSourceOrute para obtener Polyline
+    const { distance, duration, polyline } = await orsCalculateDistance(
+        tripData.latitudeStart,
+        tripData.longitudeStart,
+        tripData.latitudeEnd,
+        tripData.longitudeEnd
+    );
+
+    // notificación conductor y cliente
+    io.to(driverId).emit("trip_started", { tripId, polyline, distance, duration });
+    io.to(tripData.usersClientId).emit("trip_started", { tripId, polyline, distance, duration });
 };
 
 const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProps) => {
@@ -397,5 +435,5 @@ const tripDeleteService = async ({ id }: tripDeleteProps) => {
 export {
     tripPostService, tripPutService,
     tripDeleteService, tripGetService,
-    tripAcceptService, tripDriverArrivedService
+    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService
 };

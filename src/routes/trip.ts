@@ -4,7 +4,8 @@ import { check } from 'express-validator';
 import {
     tripPostController, tripPutController,
     tripDeleteController, tripGetController,
-    tripAcceptController, tripDriverArrivedController
+    tripAcceptController, tripDriverArrivedController,
+    startTripAndUpdateRouteController
 } from "../controllers/trip";
 import { validarCampos } from "../middelware/validar-campos";
 import { findTrip } from "../helpers/db-validators";
@@ -22,6 +23,8 @@ router.post("/", validarJWT, tripPostController);
 router.post("/driverAccepted/:id", validarJWTDriver, tripAcceptController);
 
 router.post("/driverArrived/:id", validarJWTDriver, tripDriverArrivedController);
+
+router.post("/tripStarted/:id", validarJWTDriver, startTripAndUpdateRouteController);
 
 router.put("/:id", [
     validarJWT,

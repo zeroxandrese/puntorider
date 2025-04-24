@@ -10,9 +10,7 @@ const calculateDistance = async (lat1: number, lon1: number, lat2: number, lon2:
         const response = await DistanceApi.get('/json', { params });
 
         const data = response.data;
-console.log(data,"data del api route");
-console.log(data,"data del api route 2",data.rows[0].elements[0]);
-console.log(data,"data del api route 3",data.rows[0]);
+
         // Validación de response
         if (data.rows && data.rows[0] && data.rows[0].elements[0].status === "OK") {
             const distanceText: string = data.rows[0].elements[0].distance.text;
