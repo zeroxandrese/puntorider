@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import NodeGeocoder from "node-geocoder";
 
-import { tripCalculateInterface } from '../interface/interface';
+import { tripCalculateInterface, PropsPutCalculateTripOfferedPrice, PropsDeleteCalculateTrip } from '../interface/interface';
 import { calculateDistance } from '../utils/calculateDistance';
 
 const options: NodeGeocoder.Options = {
@@ -43,6 +43,7 @@ const tripCalculatePostService = async ({
     discountApplied,
     longitudeEnd,
     paymentMethod,
+    vehicle,
     uid
 }: tripCalculateInterface) => {
 
@@ -89,23 +90,18 @@ const tripCalculatePostService = async ({
     let totalPriceOriginla = distance.distance * basePricePerKmBase?.price!;
     totalPriceOriginla = roundToNextHalfOrWhole(totalPriceOriginla);
 
-    let wasDiscountApplied = false;
-    let totalPriceWithDiscount = totalPriceOriginla;
+    let finalPriceWithDiscount = totalPriceOriginla;
 
-    // Validación del código de descuento
     if (discountCode) {
         const responseDiscountCode = await prisma.discountCode.findFirst({
-            where: { code: discountCode, usersClientId: uid.uid },
+            where: { code: discountCode, usersClientId: uid },
         });
 
         if (responseDiscountCode) {
             const discountPercentage = responseDiscountCode.percentage || 0;
             const discountAmount = (totalPriceOriginla * discountPercentage) / 100;
-            totalPriceWithDiscount = totalPriceOriginla - discountAmount;
-            totalPriceWithDiscount = roundToNextHalfOrWhole(totalPriceWithDiscount);
-            wasDiscountApplied = true;
-        } else {
-            console.error("Código de descuento no válido");
+            finalPriceWithDiscount = totalPriceOriginla - discountAmount;
+            finalPriceWithDiscount = roundToNextHalfOrWhole(finalPriceWithDiscount);
         }
     }
 
@@ -117,7 +113,7 @@ const tripCalculatePostService = async ({
 
     const existingTrip = await prisma.calculateTrip.findFirst({
         where: {
-            usersClientId: uid.uid,
+            usersClientId: uid,
             status: true
         }
     });
@@ -125,19 +121,16 @@ const tripCalculatePostService = async ({
     if (existingTrip) {
         await prisma.calculateTrip.deleteMany({
             where: {
-                usersClientId: uid.uid,
+                usersClientId: uid,
                 status: true
             }
         });
     };
 
-    const finalPriceWithDiscount = wasDiscountApplied ? totalPriceWithDiscount : 0;
-
     const responseCalculeTrip = prisma.calculateTrip.create({
         data: {
-            usersClientId: uid.uid,
+            usersClientId: uid,
             price: totalPriceOriginla,
-            priceWithDiscount: finalPriceWithDiscount,
             basePrice: basePricePerKmBase?.price!,
             paymentMethod: paymentMethod,
             kilometers: distance.distance,
@@ -150,6 +143,8 @@ const tripCalculatePostService = async ({
             dateScheduled: currentDateTime,
             hourScheduledStart: currentHour,
             estimatedArrival: distance.estimatedArrival,
+            vehicle: vehicle,
+            priceWithDiscount: finalPriceWithDiscount,
             discountCode: discountCode || null,
             discountApplied: discountCode ? true : false
         }
@@ -158,4 +153,90 @@ const tripCalculatePostService = async ({
     return responseCalculeTrip
 };
 
-export { tripCalculatePostService };
+const tripCalculatePutService = async ({ tripId, uid, offeredPrice, discountCode }: PropsPutCalculateTripOfferedPrice) => {
+
+    try {
+
+        const validationTrip = await prisma.calculateTrip.findFirst({
+            where: { uid: tripId, status: true }
+        });
+
+        if (!validationTrip) {
+            console.error("viaje no existe");
+            return;
+        };
+
+        let validOfferedPrice: number | null = null;
+        if (offeredPrice && typeof offeredPrice === "number") {
+            const minAcceptableOffer = validationTrip.price * 0.5;
+            if (offeredPrice >= minAcceptableOffer) {
+                validOfferedPrice = roundToNextHalfOrWhole(offeredPrice);
+            }
+        }
+
+        const basePriceForDiscount = validOfferedPrice ?? validationTrip.price;
+
+        let finalPriceWithDiscount = basePriceForDiscount;
+
+        if (discountCode) {
+            const responseDiscountCode = await prisma.discountCode.findFirst({
+                where: { code: discountCode, usersClientId: uid },
+            });
+
+            if (responseDiscountCode) {
+                const discountPercentage = responseDiscountCode.percentage || 0;
+                const discountAmount = (basePriceForDiscount * discountPercentage) / 100;
+                finalPriceWithDiscount = basePriceForDiscount - discountAmount;
+                finalPriceWithDiscount = roundToNextHalfOrWhole(finalPriceWithDiscount);
+            }
+        }
+
+
+        const responseCalculeTrip = prisma.calculateTrip.update({
+            where: { uid: validationTrip.uid },
+            data: {
+                offeredPrice: validOfferedPrice,
+                priceWithDiscount: finalPriceWithDiscount,
+                discountCode: discountCode || null,
+                discountApplied: discountCode ? true : false,
+            }
+        });
+
+        return responseCalculeTrip
+
+    } catch (err) {
+        console.error("Error en el servicio del viaje programado");
+    }
+
+};
+
+const tripCalculateDeleteService = async ({ tripId, uid }: PropsDeleteCalculateTrip) => {
+
+    try {
+
+        const validationTrip = await prisma.calculateTrip.findFirst({
+            where: { uid: tripId, usersClientId: uid, status: true }
+        });
+
+        if (!validationTrip) {
+            console.error("viaje no existe");
+            return;
+        };
+
+        const responseCalculeTrip = await prisma.calculateTrip.update({
+            where: { uid: validationTrip.uid },
+            data: {
+                status: false,
+                cancelForUser: true
+            }
+        });
+
+        return responseCalculeTrip;
+
+    } catch (error) {
+        console.error("Error en el servicio del viaje programado");
+    }
+
+};
+
+export { tripCalculatePostService, tripCalculatePutService, tripCalculateDeleteService };

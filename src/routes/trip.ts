@@ -5,7 +5,7 @@ import {
     tripPostController, tripPutController,
     tripDeleteController, tripGetController,
     tripAcceptController, tripDriverArrivedController,
-    startTripAndUpdateRouteController
+    startTripAndUpdateRouteController, endTripController
 } from "../controllers/trip";
 import { validarCampos } from "../middelware/validar-campos";
 import { findTrip } from "../helpers/db-validators";
@@ -25,6 +25,8 @@ router.post("/driverAccepted/:id", validarJWTDriver, tripAcceptController);
 router.post("/driverArrived/:id", validarJWTDriver, tripDriverArrivedController);
 
 router.post("/tripStarted/:id", validarJWTDriver, startTripAndUpdateRouteController);
+
+router.post("/tripEnd/:id", validarJWTDriver, endTripController);
 
 router.put("/:id", [
     validarJWT,

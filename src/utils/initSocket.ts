@@ -2,6 +2,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { Server as HttpServer } from "http";
 
 let io: SocketIOServer;
+const userSockets = new Map<string, string>(); // Mapa para asociar UID con socket.id
 
 export const initSocketio = (server: HttpServer) => {
   io = new SocketIOServer(server, {
@@ -14,17 +15,18 @@ export const initSocketio = (server: HttpServer) => {
   io.on("connection", (socket) => {
     console.log("🧠 Cliente conectado:", socket.id);
 
-    //sala para viajes confirmados
-    socket.on("confirm-trip", ({ tripId }) => {
-      socket.join(tripId);
-      console.log(`Usuario unido a la sala del viaje: ${tripId}`);
-
-      //io.to(tripId).emit('trip-started', { message: 'El viaje ha comenzado' });
+    socket.on("register-user", (uid: string) => {
+      userSockets.set(uid, socket.id); 
+      console.log(`Usuario ${uid} registrado en socket ${socket.id}`);
     });
 
-    // Para comentarios
-    socket.on('new-comment', ({ tripId, comment }) => {
-      io.to(tripId).emit('new-comment', comment);
+    socket.on("confirm-trip", ({ tripId }) => {
+      socket.join(tripId);
+      console.log(`Usuario ${socket.id} unido a la sala del viaje: ${tripId}`);
+    });
+
+    socket.on("new-comment", ({ tripId, comment }) => {
+      io.to(tripId).emit("new-comment", comment);
     });
 
     socket.on("join", (uid: string) => {
@@ -32,8 +34,15 @@ export const initSocketio = (server: HttpServer) => {
       console.log(`🔗 Usuario ${uid} se unió a su sala.`);
     });
 
+    // Desconexión
     socket.on("disconnect", () => {
       console.log("👋 Cliente desconectado:", socket.id);
+
+      userSockets.forEach((id, uid) => {
+        if (id === socket.id) {
+          userSockets.delete(uid);
+        }
+      });
     });
   });
 };

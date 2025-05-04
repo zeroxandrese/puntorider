@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { tripCalculatePostService } from '../services/tripCalculateService';
+import { tripCalculatePostService, tripCalculatePutService, tripCalculateDeleteService } from '../services/tripCalculateService';
 
 interface AuthenticatedRequest extends Request {
     userAuth: {
@@ -8,14 +8,15 @@ interface AuthenticatedRequest extends Request {
 }
 
 const tripCalculatePostController = async (req: any, res: Response) => {
-    const uid = req.userAuth;
+    const { uid } = req.userAuth;
     const { latitudeStart,
         longitudeStart,
         discountCode,
         latitudeEnd,
         longitudeEnd,
         paymentMethod,
-        discountApplied
+        discountApplied,
+        vehicle
     } = req.body
 
     try {
@@ -24,7 +25,8 @@ const tripCalculatePostController = async (req: any, res: Response) => {
             !longitudeStart || longitudeStart === "" ||
             !latitudeEnd || latitudeEnd === "" ||
             !longitudeEnd || longitudeEnd === "" ||
-            !paymentMethod || paymentMethod === ""
+            !paymentMethod || paymentMethod === "" ||
+            !vehicle || vehicle === ""
         ) {
             res.status(401).json({
                 msg: "Información faltante"
@@ -40,7 +42,8 @@ const tripCalculatePostController = async (req: any, res: Response) => {
             longitudeStart,
             latitudeEnd,
             longitudeEnd,
-            paymentMethod
+            paymentMethod,
+            vehicle
         });
 
         res.status(201).json(responseTrip)
@@ -53,4 +56,53 @@ const tripCalculatePostController = async (req: any, res: Response) => {
 
 };
 
-export { tripCalculatePostController }
+const tripCalculatePutController = async (req: any, res: Response) => {
+
+    const { uid } = req.userAuth;
+    const id = req.params.id;
+    const { offeredPrice, discountCode } = req.body;
+
+    try {
+
+        if (!uid || !id) {
+            res.status(401).json({
+                msg: "Información faltante"
+            });
+        }
+
+      const responseTrip = await tripCalculatePutService({ uid, tripId: id, offeredPrice, discountCode });
+
+      res.status(201).json(responseTrip)
+
+    } catch (error) {
+        res.sendStatus(501)
+        throw new Error("Problemas con el registro, comunicate con el admin");
+    }
+
+};
+
+const tripCalculateDeleteController = async (req: any, res: Response) => {
+
+    const { uid } = req.userAuth;
+    const id = req.params.id;
+
+    try {
+
+        if (!uid || !id) {
+            res.status(401).json({
+                msg: "Información faltante"
+            });
+        }
+
+      const responseTrip = await tripCalculateDeleteService({ uid, tripId: id});
+
+      res.status(201).json(responseTrip)
+
+    } catch (error) {
+        res.sendStatus(501)
+        throw new Error("Problemas con el registro, comunicate con el admin");
+    }
+
+};
+
+export { tripCalculatePostController, tripCalculatePutController, tripCalculateDeleteController }

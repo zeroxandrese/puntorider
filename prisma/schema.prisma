@@ -43,6 +43,8 @@ model UsersClient {
   referredCodeSender    ReferredCodeUsed[]    @relation("UserClientSenderCodeRef")
   shipmentItem          ShipmentItem[]        @relation("UserClientShipmentItem")
   ContactUs             ContactUs[]           @relation("UserClientContacUs")
+  clientsSurveys        ClientsSurveys[]      @relation("UserClientIDSurveys")
+  tokenNotification     TokenNotification[]   @relation("UserClientTokenNotification")
 
   @@map("usersClient")
 }
@@ -75,15 +77,16 @@ model UsersDriver {
   profile             Profile  @default(DRIVER)
   created             DateTime @default(now())
 
-  driverLevels        DriversLevel[]        @relation("UserDriverLevels")
-  vehicle             Vehicles[]            @relation("VehicleDriver")
-  commentsDriver      CommentsDriver[]      @relation("UserDriverComment")
-  trip                Trip[]                @relation("UserDriverTrip")
-  reportDriver        ReportDriver[]        @relation("UserDriverReport")
-  historyTripsDriver  HistoryTripsDriver[]  @relation("UserDriverHistoryTrip")
-  notifications       NotificationsDriver[] @relation("UserDriverNotification")
-  shipment            Shipment[]            @relation("UserDriverShipment")
-  tripCancelForDriver TripCancelForDriver[] @relation("TripCancelDriverID")
+  driverLevels          DriversLevel[]          @relation("UserDriverLevels")
+  vehicle               Vehicles[]              @relation("VehicleDriver")
+  commentsDriver        CommentsDriver[]        @relation("UserDriverComment")
+  trip                  Trip[]                  @relation("UserDriverTrip")
+  reportDriver          ReportDriver[]          @relation("UserDriverReport")
+  historyTripsDriver    HistoryTripsDriver[]    @relation("UserDriverHistoryTrip")
+  notifications         NotificationsDriver[]   @relation("UserDriverNotification")
+  shipment              Shipment[]              @relation("UserDriverShipment")
+  rejectedTripForDriver RejectedTripForDriver[] @relation("TripCancelDriverID")
+  driversSurveys        DriversSurveys[]        @relation("DriversSurveysDriverID")
 
   @@map("usersDriver")
 }
@@ -155,6 +158,7 @@ model Trip {
   complete          Boolean     @default(false)
   paid              Boolean     @default(false)
   price             Float       @default(0)
+  offeredPrice      Float?
   priceWithDiscount Float?
   basePrice         Float       @default(0)
   paymentMethod     String
@@ -172,15 +176,20 @@ model Trip {
   discountApplied   Boolean?    @default(false)
   driverArrived     Boolean?    @default(false)
   tripStarted       Boolean?    @default(false)
+  vehicle           String
   status            Boolean     @default(true)
   created           DateTime    @default(now())
   cancelForUser     Boolean     @default(false)
+  cancelForDriver   Boolean     @default(false)
+  tripCalculateId   String
 
-  commentsClient      CommentsClient[]      @relation("tripCommentClient")
-  commentsDriver      CommentsDriver[]      @relation("tripCommentDriver")
-  historyTripsClient  HistoryTripsClient[]  @relation("TripHistoryClient")
-  historyTripsDriver  HistoryTripsDriver[]  @relation("TripHistoryDriver")
-  tripCancelForDriver TripCancelForDriver[] @relation("TripIDCancelForDriver")
+  commentsClient        CommentsClient[]        @relation("tripCommentClient")
+  commentsDriver        CommentsDriver[]        @relation("tripCommentDriver")
+  historyTripsClient    HistoryTripsClient[]    @relation("TripHistoryClient")
+  historyTripsDriver    HistoryTripsDriver[]    @relation("TripHistoryDriver")
+  rejectedTripForDriver RejectedTripForDriver[] @relation("TripIDCancelForDriver")
+  driversSurveys        DriversSurveys[]        @relation("TripIDDriversSurveys")
+  clientsSurveys        ClientsSurveys[]        @relation("TripIDClientsSurveys")
 
   @@index([usersDriverId, usersClientId])
   @@map("trip")
@@ -230,6 +239,7 @@ model ScheduledTrip {
   usersClientId      String      @db.ObjectId
   usersClient        UsersClient @relation("UserClientScheduledTrip", fields: [usersClientId], references: [uid])
   price              Float       @default(0)
+  offeredPrice       Float?
   basePrice          Float       @default(0)
   paymentMethod      String
   kilometers         Float       @default(0)
@@ -286,6 +296,7 @@ model HistoryTripsClient {
   complete        Boolean     @default(true)
   paid            Boolean     @default(true)
   price           Float       @default(0)
+  offeredPrice    Float?
   basePrice       Float       @default(0)
   paymentMethod   String
   kilometers      Float       @default(0)
@@ -299,6 +310,7 @@ model HistoryTripsClient {
   hourEnd         String?
   discountCode    String?
   discountApplied Boolean?    @default(false)
+  vehicle         String
   cancelForUser   Boolean     @default(false)
   created         DateTime    @default(now())
 
@@ -315,6 +327,7 @@ model HistoryTripsDriver {
   complete        Boolean     @default(true)
   paid            Boolean     @default(true)
   price           Float       @default(0)
+  offeredPrice    Float?
   basePrice       Float       @default(0)
   paymentMethod   String
   kilometers      Float       @default(0)
@@ -328,6 +341,7 @@ model HistoryTripsDriver {
   hourEnd         String
   discountCode    String?
   discountApplied Boolean?    @default(false)
+  vehicle         String
   created         DateTime    @default(now())
 
   @@index([usersDriverId, tripId])
@@ -432,6 +446,7 @@ model CalculateTrip {
   usersClientId      String      @db.ObjectId
   usersClient        UsersClient @relation("CalculateUserTrip", fields: [usersClientId], references: [uid])
   price              Float       @default(0)
+  offeredPrice       Float?
   priceWithDiscount  Float?
   basePrice          Float       @default(0)
   paymentMethod      String
@@ -449,8 +464,10 @@ model CalculateTrip {
   scheduledStatus    Boolean     @default(false)
   discountCode       String?
   discountApplied    Boolean?    @default(false)
+  vehicle            String
   status             Boolean     @default(true)
   created            DateTime    @default(now())
+  cancelForUser      Boolean     @default(false)
 
   @@index([usersClientId])
   @@map("calculateTrip")
@@ -517,7 +534,7 @@ model ContactUs {
   @@map("contactUs")
 }
 
-model TripCancelForDriver {
+model RejectedTripForDriver {
   uid           String      @id @default(auto()) @map("_id") @db.ObjectId
   usersDriverId String      @db.ObjectId
   usersDriver   UsersDriver @relation("TripCancelDriverID", fields: [usersDriverId], references: [uid])
@@ -527,5 +544,47 @@ model TripCancelForDriver {
   created       DateTime    @default(now())
 
   @@index([status])
-  @@map("tripCancelForDriver")
+  @@map("rejectedTripForDriver")
+}
+
+model DriversSurveys {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId String      @db.ObjectId
+  usersDriver   UsersDriver @relation("DriversSurveysDriverID", fields: [usersDriverId], references: [uid])
+  tripId        String      @db.ObjectId
+  trip          Trip        @relation("TripIDDriversSurveys", fields: [tripId], references: [uid])
+  feedback      String?
+  score         Float       @default(0)
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersDriverId, tripId])
+  @@map("driversSurveys")
+}
+
+model ClientsSurveys {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientIDSurveys", fields: [usersClientId], references: [uid])
+  tripId        String      @db.ObjectId
+  trip          Trip        @relation("TripIDClientsSurveys", fields: [tripId], references: [uid])
+  feedback      String?
+  score         Float       @default(0)
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersClientId, tripId])
+  @@map("clientsSurveys")
+}
+
+model TokenNotification {
+  uid           String      @id @default(auto()) @map("_id") @db.ObjectId
+  usersClientId String      @db.ObjectId
+  usersClient   UsersClient @relation("UserClientTokenNotification", fields: [usersClientId], references: [uid])
+  fcmToken      String
+  status        Boolean     @default(true)
+  created       DateTime    @default(now())
+
+  @@index([usersClientId])
+  @@map("tokenNotification")
 }

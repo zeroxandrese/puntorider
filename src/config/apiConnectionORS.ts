@@ -7,15 +7,10 @@ const orsDistanceApi = axios.create({ baseURL });
 
 orsDistanceApi.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (config.url && baseURL && key) {
-      const url = new URL(config.url, baseURL);
-      const params = new URLSearchParams(config.params);
-
-      params.set('key', key);
-
-      // Actualización de parametros
-      config.url = `${url.pathname}?${params.toString()}`;
-      config.params = {};
+    if (key) {
+      config.headers.set('Authorization', key);
+      config.headers.set('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+      config.headers.set('Content-Type', 'application/json; charset=utf-8');
     }
     return config;
   },

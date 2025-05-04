@@ -8,7 +8,7 @@ import path from "path";
 
 import { initSocketio } from "./utils/initSocket";
 
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
 const app = express();
 const server = createServer(app);
@@ -31,4 +31,4 @@ app.use(router);
 initSocketio(server);
 
 dbConection().then(()=>console.log('BD Conectada al Server Transportia😎'));
-server.listen(PORT, () => console.log(`🚀 Server escuchando en puerto ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Server escuchando en puerto ${PORT}`));

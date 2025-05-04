@@ -121,6 +121,7 @@ export interface TripPost {
   hourStart: string; // Hora de inicio
   hourEnd: string; // Hora de finalización
   discountCode?: string; // Código de descuento aplicado (opcional)
+  vehicle?: string;
   status?: boolean; // Estado del viaje (activo/inactivo)
   created?: Date; // Fecha de creación
 
@@ -138,8 +139,10 @@ export interface tripCalculateInterface {
   longitudeEnd: string;
   discountCode: string;
   discountApplied: boolean;
+  offeredPrice?: number;
   paymentMethod: string;
-  uid: UserClient;
+  vehicle: string;
+  uid: string;
 }
 
 export interface discountCodePostProps {
@@ -246,5 +249,41 @@ export interface vehicle {
 export interface contactUsProps{
   uid: string,
   comment: string
+}
+
+export interface clientsSurveysProps{
+  tripId: string,
+  feedback?: string,
+  score: number,
+  usersClientId: string
+}
+
+export interface DriversSurveysProps{
+  tripId: string,
+  feedback?: string,
+  score: number,
+  usersDriverId: string
+}
+
+export interface cancelTripProps {
+  tripId: string,
+  uid: string
+}
+
+export interface PropsPutCalculateTripOfferedPrice {
+  tripId: string,
+  uid: string,
+  offeredPrice: number,
+  discountCode: string
+}
+
+export interface PropsDeleteCalculateTrip {
+  tripId: string,
+  uid: string
+}
+
+export interface TokenNotificationProps {
+  fcmToken: string,
+  uid: string
 }
 

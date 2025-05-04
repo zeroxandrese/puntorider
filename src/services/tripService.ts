@@ -5,46 +5,85 @@ import { getSocketIO } from "../utils/initSocket";
 import { genericIdProps, tripPutProps, tripDeleteProps, userDriver, vehicle } from '../interface/interface';
 import { calculateDistance } from '../utils/calculateDistance';
 import { orsCalculateDistance } from "../utils/orsDistance";
+import { simulateDriverPositions } from "../utils/simulationPositionDriver";
+import { sendPushNotification } from "../utils/notificationsController";
 
 const io = getSocketIO();
 
 const prisma = new PrismaClient
 
-const createTemporaryDriver = async (tripDataFind: any) => {
+const createTemporaryDriver = async (tripDataFind: any, vehicle: string) => {
     if (!tripDataFind) {
         throw new Error("No se encontraron datos del viaje.");
     }
 
     const driverId = await prisma.usersDriver.findFirst({
-        where: { status: true }
+        where: { uid: "67fedde52b10f857244d8d35", status: true }
     });
 
     if (!driverId) {
-        console.error("sin driveruserr")
+        console.error("sin driveruser")
         return null
     }
 
     const latOffset = (Math.random() - 0.5) * 0.02;
     const lngOffset = (Math.random() - 0.5) * 0.02;
 
-    const driverPosition = {
+    const driverData = {
         latitude: tripDataFind.latitudeStart + latOffset,
         longitude: tripDataFind.longitudeStart + lngOffset,
+        vehicleType: vehicle,
     };
 
     try {
-        // Verificar conexión con Redis
         if (!redisClient.isOpen) {
-            console.log("🔄 Redis desconectado, reconectando...");
+          
             await redisClient.connect();
         }
-        await redisClient.del("positionDriver:[object Object]");
-        // Guardar en Redis
-        await redisClient.set(`positionDriver:${driverId.uid}`, JSON.stringify(driverPosition), {
-            EX: 300
-        });
+        await redisClient.del(`positionDriver:${driverId.uid}`);
 
-        console.log("✅ Conductor guardado en Redis correctamente.");
+        await redisClient.set(`positionDriver:${driverId.uid}`, JSON.stringify(driverData), { EX: 300 });
+ 
+    } catch (error) {
+        console.error("❌ Error al guardar en Redis:", error);
+    }
+
+    return driverId;
+};
+
+const createTemporaryDriver2 = async (tripDataFind: any, vehicle: string) => {
+    if (!tripDataFind) {
+        throw new Error("No se encontraron datos del viaje.");
+    }
+
+    const driverId = await prisma.usersDriver.findFirst({
+        where: { uid: "680f89845e78941eee1faffa", status: true }
+    });
+
+    if (!driverId) {
+        console.error("sin driveruser")
+        return null
+    }
+
+    const latOffset = (Math.random() - 0.5) * 0.02;
+    const lngOffset = (Math.random() - 0.5) * 0.02;
+
+    const driverData = {
+        latitude: tripDataFind.latitudeStart + latOffset,
+        longitude: tripDataFind.longitudeStart + lngOffset,
+        vehicleType: vehicle,
+    };
+
+    try {
+        if (!redisClient.isOpen) {
+
+            await redisClient.connect();
+        }
+        await redisClient.del(`positionDriver:${driverId.uid}`);
+
+ 
+        await redisClient.set(`positionDriver:${driverId.uid}`, JSON.stringify(driverData), { EX: 300 });
+     
     } catch (error) {
         console.error("❌ Error al guardar en Redis:", error);
     }
@@ -56,12 +95,24 @@ const tripGetService = async ({ id }: genericIdProps) => {
 
     try {
 
-        const scheduledTripResponseService = await prisma.scheduledTrip.findMany({ where: { usersClientId: id, status: true } });
+        const response = await prisma.trip.findFirst({ where: { usersClientId: id, status: true } });
+        if (!response) {
+            return;
+        }
+        const driverData = await prisma.usersDriver.findFirst({ where: { uid: response.usersDriverId } });
+        const vehicleData = await prisma.vehicles.findFirst({ where: { usersDriverId: response.usersDriverId } });
 
-        return scheduledTripResponseService
+        const tripResponseService = {
+            response,
+            driverData,
+            vehicleData
+        }
+
+        return tripResponseService
 
     } catch (err) {
-        throw new Error("Error en el servicio del viaje programado");
+        console.error("Error en el servicio del viaje:", err);
+        return null;
 
     }
 };
@@ -80,7 +131,8 @@ const tripPostService = async ({ id }: genericIdProps) => {
             return null;
         }
 
-        await createTemporaryDriver(tripDataFind);
+        await createTemporaryDriver(tripDataFind, "VEHICLE");
+        await createTemporaryDriver2(tripDataFind, "MOTO");
 
         // Obtener conductores disponibles
         const keys = await redisClient.keys('positionDriver:*');
@@ -104,20 +156,31 @@ const tripPostService = async ({ id }: genericIdProps) => {
             })
         );
 
-        const validPositions = positions.filter((p) => p !== null) as { userId: string; position: { latitude: number; longitude: number } }[];
+        const validPositions = positions.filter((p) => p !== null) as {
+            userId: string;
+            position: { latitude: number; longitude: number; vehicleType: string }
+        }[];
 
+        const requiredVehicleType = tripDataFind.vehicle;
 
-        if (validPositions.length === 0) {
-            console.error("No hay conductores disponibles en la zona.");
+        if (!requiredVehicleType) {
+            console.error("No se especificó el tipo de vehículo requerido.");
+            return null;
+        }
+
+        const filteredByVehicle = validPositions.filter(driver => driver.position.vehicleType === requiredVehicleType);
+
+        if (filteredByVehicle.length === 0) {
+            console.error("No hay conductores disponibles con el tipo de vehículo correcto.");
             return {
                 tripId: "",
-                message: "No hay conductores disponibles dentro de tu zona."
+                message: "No hay conductores disponibles con el tipo de vehículo solicitado."
             };
-        }
+        };
 
         // Calcular distancias con conductores
         const distances = await Promise.all(
-            validPositions.map(async (driver) => {
+            filteredByVehicle.map(async (driver) => {
 
                 const { distance, estimatedArrival } = await calculateDistance(
                     tripDataFind.latitudeStart,
@@ -134,7 +197,6 @@ const tripPostService = async ({ id }: genericIdProps) => {
         const reasonableDistance = 12; // en kilómetros
         const driversInRange = distances.filter(driver => driver.distance <= reasonableDistance);
 
-        console.log("✅ Conductores dentro del rango:", driversInRange);
         if (driversInRange.length === 0) {
             console.error("No hay conductores disponibles dentro de tu zona.");
             return {
@@ -191,7 +253,30 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
         await redisClient.del(`pendingTrip:${tripId}`);
 
         // Buscar los datos del viaje
-        const tripDataFind = await prisma.calculateTrip.findUnique({ where: { uid: tripId, status: true } });
+        const tripDataFind = await prisma.calculateTrip.findUnique({
+            where: { uid: tripId, status: true },
+            select: {
+                uid: true,
+                usersClientId: true,
+                price: true,
+                offeredPrice: true,
+                priceWithDiscount: true,
+                basePrice: true,
+                paymentMethod: true,
+                kilometers: true,
+                latitudeStart: true,
+                longitudeStart: true,
+                latitudeEnd: true,
+                longitudeEnd: true,
+                addressStart: true,
+                addressEnd: true,
+                hourScheduledStart: true,
+                estimatedArrival: true,
+                discountCode: true,
+                discountApplied: true,
+                vehicle: true
+            }
+        });
         if (!tripDataFind) return { success: false, message: "El viaje no existe." };
 
         if (tripDataFind.discountCode) {
@@ -216,6 +301,7 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
                 usersClientId: tripDataFind.usersClientId,
                 usersDriverId: driverId,
                 price: tripDataFind.price,
+                offeredPrice: tripDataFind.offeredPrice || undefined,
                 priceWithDiscount: tripDataFind.priceWithDiscount,
                 basePrice: tripDataFind.basePrice,
                 paymentMethod: tripDataFind.paymentMethod,
@@ -229,7 +315,9 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
                 hourStart: tripDataFind.hourScheduledStart,
                 estimatedArrival: tripDataFind.estimatedArrival,
                 discountCode: tripDataFind.discountCode,
-                discountApplied: tripDataFind.discountApplied
+                discountApplied: tripDataFind.discountApplied,
+                vehicle: tripDataFind.vehicle,
+                tripCalculateId: tripDataFind.uid
             }
         });
 
@@ -252,17 +340,36 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             trip,
         });
 
+        //Calculo del polyline del conductor
+        const driverLocationStr = await redisClient.get(`positionDriver:${driverId}`);
+        if (!driverLocationStr) {
+            return { success: false, message: "No se encontró la ubicación del conductor en Redis." };
+        };
+
+        const driverLocation = JSON.parse(driverLocationStr);
+
         // OpenSourceOrute para obtener Polyline
         const { distance, duration, polyline } = await orsCalculateDistance(
             trip.latitudeStart,
             trip.longitudeStart,
-            trip.latitudeEnd,
-            trip.longitudeEnd
+            driverLocation.latitude,
+            driverLocation.longitude
         );
 
+        const positionDriverEvent = {
+            latitude: driverLocation.latitude,
+            longitude: driverLocation.longitude
+        };
+
         // notificación conductor y cliente
-        io.to(driverId).emit("driver_route_accepted", { polyline  });
-        io.to(trip.usersClientId).emit("client_route_accepted", { polyline });
+        io.to(driverId).emit("driver_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
+        io.to(trip.usersClientId).emit("client_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
+
+        await simulateDriverPositions({
+            driverId,
+            polyline,
+            userIdClient: trip.usersClientId
+        });
 
         return { success: true, trip };
 
@@ -284,6 +391,13 @@ const tripDriverArrivedService = async ({ driverId, tripId }: { driverId: string
                 driverArrived: true
             }
         });
+
+        const validationTokenNotification = await prisma.tokenNotification.findFirst({
+            where: { usersClientId: trip.usersClientId }
+        })
+        if (validationTokenNotification?.fcmToken) {
+            sendPushNotification(validationTokenNotification?.fcmToken, "Un conductor te espera.");
+        }
 
         io.to(tripDataFind.usersClientId).emit("trip_driverArrived", {
             trip
@@ -313,7 +427,7 @@ const startTripAndUpdateRouteService = async ({ driverId, tripId }: { driverId: 
         data: { tripStarted: true }
     })
 
-    // OpenSourceOrute para obtener Polyline
+
     const { distance, duration, polyline } = await orsCalculateDistance(
         tripData.latitudeStart,
         tripData.longitudeStart,
@@ -322,8 +436,84 @@ const startTripAndUpdateRouteService = async ({ driverId, tripId }: { driverId: 
     );
 
     // notificación conductor y cliente
-    io.to(driverId).emit("trip_started", { tripId, polyline, distance, duration });
-    io.to(tripData.usersClientId).emit("trip_started", { tripId, polyline, distance, duration });
+    io.to(driverId).emit("trip_started", { polyline, polylineType: "FINAL" });
+    io.to(tripData.usersClientId).emit("trip_started", { polyline, polylineType: "FINAL" });
+};
+
+const endTripService = async ({ driverId, tripId }: { driverId: string; tripId: string }) => {
+    const tripData = await prisma.trip.findUnique({ where: { uid: tripId, usersDriverId: driverId, status: true } });
+    if (!tripData) {
+        console.error("No se encontró el viaje.");
+        return;
+    };
+
+    await prisma.$transaction(async (prisma) => {
+
+        const updatedTrip = await prisma.trip.update({
+            where: { uid: tripData.uid },
+            data: {
+                complete: true,
+                paid: true,
+                status: false
+            }
+        });
+
+        await prisma.historyTripsClient.create({
+            data: {
+                usersClientId: updatedTrip.usersClientId,
+                tripId: updatedTrip.uid,
+                price: updatedTrip.price,
+                offeredPrice: updatedTrip.offeredPrice,
+                basePrice: updatedTrip.basePrice,
+                paymentMethod: updatedTrip.paymentMethod,
+                kilometers: updatedTrip.kilometers,
+                latitudeStart: updatedTrip.latitudeStart,
+                longitudeStart: updatedTrip.longitudeStart,
+                latitudeEnd: updatedTrip.latitudeEnd,
+                longitudeEnd: updatedTrip.longitudeEnd,
+                addressStart: updatedTrip.addressStart,
+                addressEnd: updatedTrip.addressEnd,
+                hourStart: updatedTrip.hourStart,
+                hourEnd: new Date().toString(),
+                discountCode: updatedTrip.discountCode,
+                discountApplied: updatedTrip.discountApplied,
+                vehicle: updatedTrip.vehicle
+            }
+        });
+
+        await prisma.historyTripsDriver.create({
+            data: {
+                usersDriverId: updatedTrip.usersDriverId,
+                tripId: updatedTrip.uid,
+                price: updatedTrip.price,
+                offeredPrice: updatedTrip.offeredPrice,
+                basePrice: updatedTrip.basePrice,
+                paymentMethod: updatedTrip.paymentMethod,
+                kilometers: updatedTrip.kilometers,
+                latitudeStart: updatedTrip.latitudeStart,
+                longitudeStart: updatedTrip.longitudeStart,
+                latitudeEnd: updatedTrip.latitudeEnd,
+                longitudeEnd: updatedTrip.longitudeEnd,
+                addressStart: updatedTrip.addressStart,
+                addressEnd: updatedTrip.addressEnd,
+                hourStart: updatedTrip.hourStart,
+                hourEnd: new Date().toString(),
+                discountCode: updatedTrip.discountCode,
+                discountApplied: updatedTrip.discountApplied,
+                vehicle: updatedTrip.vehicle
+            }
+        });
+    });
+
+    // notificación conductor y cliente
+    io.to(driverId).emit("trip_end", { endTrip: true });
+    io.to(tripData.usersClientId).emit("trip_end", { endTrip: true });
+
+    const socketsInTripRoom = await io.in(tripData.uid).fetchSockets();
+
+    for (const socket of socketsInTripRoom) {
+        socket.leave(tripData.uid);
+    }
 };
 
 const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProps) => {
@@ -372,7 +562,8 @@ const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProp
                         hourStart: updatedTrip.hourStart,
                         hourEnd: new Date().toString(),
                         discountCode: updatedTrip.discountCode,
-                        discountApplied: updatedTrip.discountApplied
+                        discountApplied: updatedTrip.discountApplied,
+                        vehicle: updatedTrip.vehicle
                     }
                 });
 
@@ -393,7 +584,8 @@ const tripPutService = async ({ complete, paid, cancelForUser, id }: tripPutProp
                         hourStart: updatedTrip.hourStart,
                         hourEnd: new Date().toString(),
                         discountCode: updatedTrip.discountCode,
-                        discountApplied: updatedTrip.discountApplied
+                        discountApplied: updatedTrip.discountApplied,
+                        vehicle: updatedTrip.vehicle
                     }
                 });
 
@@ -435,5 +627,5 @@ const tripDeleteService = async ({ id }: tripDeleteProps) => {
 export {
     tripPostService, tripPutService,
     tripDeleteService, tripGetService,
-    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService
+    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService, endTripService
 };
