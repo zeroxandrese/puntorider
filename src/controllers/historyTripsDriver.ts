@@ -8,7 +8,7 @@ interface AuthenticatedRequest extends Request {
 }
 
 const historyTripsDriverGetController = async (req: any, res: Response) => {
-    const { uid } = req.userAuth;
+    const { uid } = req.userAuthDriver;
 
     try {
         if ( !uid || uid === "") {

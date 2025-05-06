@@ -26,9 +26,20 @@ const decryptData = (encryptedPhone: string) => {
 };
 
 
-const usersDriverPostService = async ({ email, password }: DriverUserPost) => {
+const usersDriverPostService = async ({ email, password, code }: DriverUserPost) => {
 
     try {
+
+        const validationCode = await prisma.codeRegisterDriver.findFirst({
+            where: { code, status: true }
+        });
+
+        if (!validationCode) {
+            console.error("No hay codigo de validación.");
+            return {
+                message: "No hay codigo de validación."
+            };
+        }
 
         const salt = bcryptjs.genSaltSync();
         const hashedPassword = bcryptjs.hashSync(password, salt);

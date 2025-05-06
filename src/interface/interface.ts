@@ -49,7 +49,8 @@ export interface UIDObject {
 
 export interface DriverUserPost {
   email: string,
-  password: string
+  password: string,
+  code: string
 }
 
 export interface PropsLogin {

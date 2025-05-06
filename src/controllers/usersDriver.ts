@@ -8,17 +8,17 @@ interface AuthenticatedRequest extends Request {
 }
 
 const usersDriverPostController = async (req: Request, res: Response) => {
-    const { email, password } = req.body
+    const { email, password, code } = req.body
 
     try {
-        if (!email || email === "" || !password || password === "") {
+        if (!email || email === "" || !password || password === "" || !code || code === "") {
             res.status(401).json({
                 msg: "Información faltante"
             });
 
         };
 
-        const responseDriver = await usersDriverPostService({ email, password });
+        const responseDriver = await usersDriverPostService({ email, password, code });
 
         res.status(201).json(responseDriver)
 

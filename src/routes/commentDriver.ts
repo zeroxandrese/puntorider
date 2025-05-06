@@ -4,28 +4,28 @@ import { check } from 'express-validator';
 import { commentDriverPostController, commentDriverPutController, commentDriverDeleteController, commentDriverGetController } from "../controllers/commentDriver";
 import { validarCampos } from "../middelware/validar-campos";
 import { findIdCommentDriver } from "../helpers/db-validators";
-import validarJWT from "../middelware/validar-jwt";
+import validarJWTDriver from "../middelware/validar-jwt-driver";
 import { findIdDriver } from "../helpers/db-validators";
 
 const router = Router();
 
 router.get("/:id", 
-    validarJWT,
+    validarJWTDriver,
     check('id', 'El id no es valido').isMongoId(),
     check('id').custom(findIdDriver),
     commentDriverGetController);
 
-router.post("/", validarJWT, validarCampos, commentDriverPostController);
+router.post("/", validarJWTDriver, validarCampos, commentDriverPostController);
 
 router.put("/:id", [
-    validarJWT,
+    validarJWTDriver,
     check('id', 'El id no es valido').isMongoId(),
     check('id').custom(findIdCommentDriver),
     validarCampos
 ],commentDriverPutController);
 
 router.delete("/:id", [
-    validarJWT,
+    validarJWTDriver,
     check('id', 'El id no es valido').isMongoId(),
     check('id').custom(findIdCommentDriver),
 ],commentDriverDeleteController);

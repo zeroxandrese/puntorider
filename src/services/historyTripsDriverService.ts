@@ -13,7 +13,7 @@ const historyTripsDriverGetGetService = async ({ id }: genericIdProps) => {
         }
 
        const historyTripsDriverResponseService = await prisma.historyTripsDriver.findMany({
-        where: { uid: id }
+        where: { usersDriverId: id }
         })
 
         return historyTripsDriverResponseService

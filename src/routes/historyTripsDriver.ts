@@ -2,10 +2,10 @@ import { Router } from "express";
 
 import { historyTripsDriverGetController } from "../controllers/historyTripsDriver";
 import { validarCampos } from "../middelware/validar-campos";
-import validarJWT from "../middelware/validar-jwt";
+import validarJWTDriver from "../middelware/validar-jwt-driver";
 
 const router = Router();
 
-router.get("/", validarJWT, validarCampos, historyTripsDriverGetController);
+router.get("/", validarJWTDriver, validarCampos, historyTripsDriverGetController);
 
 export { router };

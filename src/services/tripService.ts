@@ -37,13 +37,13 @@ const createTemporaryDriver = async (tripDataFind: any, vehicle: string) => {
 
     try {
         if (!redisClient.isOpen) {
-          
+
             await redisClient.connect();
         }
         await redisClient.del(`positionDriver:${driverId.uid}`);
 
         await redisClient.set(`positionDriver:${driverId.uid}`, JSON.stringify(driverData), { EX: 300 });
- 
+
     } catch (error) {
         console.error("❌ Error al guardar en Redis:", error);
     }
@@ -81,9 +81,9 @@ const createTemporaryDriver2 = async (tripDataFind: any, vehicle: string) => {
         }
         await redisClient.del(`positionDriver:${driverId.uid}`);
 
- 
+
         await redisClient.set(`positionDriver:${driverId.uid}`, JSON.stringify(driverData), { EX: 300 });
-     
+
     } catch (error) {
         console.error("❌ Error al guardar en Redis:", error);
     }
@@ -114,6 +114,58 @@ const tripGetService = async ({ id }: genericIdProps) => {
         console.error("Error en el servicio del viaje:", err);
         return null;
 
+    }
+};
+
+const tripFindAvailableService = async ({ id }: genericIdProps) => {
+    try {
+        console.log("🔍 Buscando viajes disponibles para el conductor:", id);
+
+        if (!redisClient.isOpen) {
+            console.log("🧩 Redis no estaba conectado. Conectando...");
+            await redisClient.connect();
+        }
+
+        // Mostrar todas las claves en Redis
+        const allKeys = await redisClient.keys('*');
+        console.log("🗂️ Todas las claves actuales en Redis:", allKeys);
+
+        const redisKey = `availableTripsForDriver:${id}`;
+        const exists = await redisClient.exists(redisKey);
+        console.log(`🔍 ¿Existe la key '${redisKey}' en Redis?:`, exists ? "✅ Sí" : "❌ No");
+
+        const tripIds = await redisClient.sMembers(redisKey);
+        console.log("🧾 IDs de viajes encontrados en Redis:", tripIds);
+
+        if (tripIds.length === 0) {
+            console.warn("⚠️ No hay viajes asociados a este conductor en Redis.");
+        }
+
+        const trips = await prisma.calculateTrip.findMany({
+            where: {
+                uid: { in: tripIds },
+                status: true
+            },
+            select: {
+                uid: true,
+                addressStart: true,
+                addressEnd: true,
+                latitudeStart: true,
+                longitudeStart: true,
+                latitudeEnd: true,
+                longitudeEnd: true,
+                price: true,
+                estimatedArrival: true
+            }
+        });
+
+        console.log("🛣️ Viajes encontrados en la base de datos:", trips);
+
+        return { trips };
+
+    } catch (err) {
+        console.error("❌ Error en el servicio del viaje:", err);
+        return null;
     }
 };
 
@@ -194,7 +246,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
         );
 
         // Filtrar conductores dentro del rango
-        const reasonableDistance = 12; // en kilómetros
+        const reasonableDistance = 30; // en kilómetros
         const driversInRange = distances.filter(driver => driver.distance <= reasonableDistance);
 
         if (driversInRange.length === 0) {
@@ -207,6 +259,12 @@ const tripPostService = async ({ id }: genericIdProps) => {
 
         // Guardar lista de conductores potenciales para el viaje
         await redisClient.set(`pendingTrip:${tripDataFind.uid}`, JSON.stringify(driversInRange.map(d => d.driver)));
+
+        for (const driver of driversInRange) {
+            await redisClient.sAdd(`availableTripsForDriver:${driver.driver}`, tripDataFind.uid);
+            const currentTrips = await redisClient.sMembers(`availableTripsForDriver:${driver.driver}`);
+            console.log(`📦 Trips asignados al conductor ${driver.driver}:`, currentTrips);
+        }
 
         //Emisiòn de notificacion a los conductores
         driversInRange.forEach((driver) => {
@@ -251,6 +309,14 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
 
         // Eliminar la key para evitar que otros acepten
         await redisClient.del(`pendingTrip:${tripId}`);
+
+        await redisClient.sRem(`availableTripsForDriver:${driverId}`, tripId);
+
+        for (const driver of pendingDrivers) {
+            if (driver !== driverId) {
+                await redisClient.sRem(`availableTripsForDriver:${driver}`, tripId);
+            }
+        }
 
         // Buscar los datos del viaje
         const tripDataFind = await prisma.calculateTrip.findUnique({
@@ -627,5 +693,5 @@ const tripDeleteService = async ({ id }: tripDeleteProps) => {
 export {
     tripPostService, tripPutService,
     tripDeleteService, tripGetService,
-    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService, endTripService
+    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService, endTripService, tripFindAvailableService
 };
