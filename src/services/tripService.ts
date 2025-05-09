@@ -131,11 +131,9 @@ const tripFindAvailableService = async ({ id }: genericIdProps) => {
         console.log("🗂️ Todas las claves actuales en Redis:", allKeys);
 
         const redisKey = `availableTripsForDriver:${id}`;
-        const exists = await redisClient.exists(redisKey);
-        console.log(`🔍 ¿Existe la key '${redisKey}' en Redis?:`, exists ? "✅ Sí" : "❌ No");
 
         const tripIds = await redisClient.sMembers(redisKey);
-        console.log("🧾 IDs de viajes encontrados en Redis:", tripIds);
+
 
         if (tripIds.length === 0) {
             console.warn("⚠️ No hay viajes asociados a este conductor en Redis.");
@@ -155,11 +153,11 @@ const tripFindAvailableService = async ({ id }: genericIdProps) => {
                 latitudeEnd: true,
                 longitudeEnd: true,
                 price: true,
-                estimatedArrival: true
+                estimatedArrival: true,
+                offeredPrice: true,
+                kilometers: true
             }
         });
-
-        console.log("🛣️ Viajes encontrados en la base de datos:", trips);
 
         return { trips };
 
@@ -392,6 +390,10 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             data: { status: false }
         });
 
+        const userResponse = await prisma.usersClient.findFirst({
+            where: { uid: tripDataFind.usersClientId }
+        });
+
         // Notificaciones
         const driverData = await prisma.usersDriver.findFirst({ where: { uid: driverId } });
         const vehicleData = await prisma.vehicles.findFirst({ where: { usersDriverId: driverId } });
@@ -404,6 +406,8 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
 
         io.to(driverId).emit("trip_assigned", {
             trip,
+            vehicle: vehicleData,
+            client: userResponse
         });
 
         //Calculo del polyline del conductor

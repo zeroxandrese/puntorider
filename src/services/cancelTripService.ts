@@ -85,6 +85,21 @@ const cancelTripClientsPostService = async ({ tripId, uid }: cancelTripProps) =>
 
     const socketsInTripRoom = await io.in(tripCancelResponseService.uid).fetchSockets();
 
+    if (!redisClient.isOpen) {
+
+      await redisClient.connect();
+    }
+
+    const pendingDriversStr = await redisClient.get(`pendingTrip:${tripId}`);
+    const pendingDrivers: string[] = pendingDriversStr ? JSON.parse(pendingDriversStr) : [];
+
+    await redisClient.del(`pendingTrip:${tripId}`);
+
+    for (const driver of pendingDrivers) {
+        await redisClient.sRem(`availableTripsForDriver:${driver}`, tripId);
+    }
+
+
     for (const socket of socketsInTripRoom) {
       socket.leave(tripCancelResponseService.uid);
     }

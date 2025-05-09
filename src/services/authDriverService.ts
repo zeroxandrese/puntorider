@@ -8,6 +8,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { generateJwtDriver } from '../helpers/generate-jwt-driver';
+import { clearAllRedisKeys } from '../utils/deleteKeyRedis';
 
 const encryptData = (data: string | number) => {
     return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
@@ -30,12 +31,17 @@ const verifyToken = async ({ uid }: UIDObject) => {
             throw new Error('El token no se ha validado');
         }
 
-        const email = decryptData(uid.email)
+        const emailDescrypt = decryptData(uid.email)
         const phone = decryptData(uid.numberPhone)
-        
-        const user = { ...uid, email, numberPhone: phone };
 
-        return user
+        const user = { ...uid, email: emailDescrypt, numberPhone: phone };
+
+        const token = await generateJwtDriver(uid.uid);
+
+        return {
+            user,
+            token
+        };
 
     } catch (error) {
         throw new Error('Algo salio mal, contacte con el administrador')
@@ -46,6 +52,7 @@ const verifyToken = async ({ uid }: UIDObject) => {
 const loginDriver = async ({ email, password }: PropsLoginDriver) => {
 
     try {
+
         const emailEncrypt = encryptEmail(email)
 
         const userResponse = await prisma.usersDriver.findFirst({
