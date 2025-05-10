@@ -404,11 +404,7 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             vehicle: vehicleData,
         });
 
-        io.to(driverId).emit("trip_assigned", {
-            trip,
-            vehicle: vehicleData,
-            client: userResponse
-        });
+        io.to(driverId).emit("trip_assigned");
 
         //Calculo del polyline del conductor
         const driverLocationStr = await redisClient.get(`positionDriver:${driverId}`);
@@ -441,7 +437,7 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             userIdClient: trip.usersClientId
         });
 
-        return { success: true, trip };
+        return { success: true, trip, user: userResponse };
 
     } catch (err: any) {
         console.error("Error al aceptar el viaje:", err.message);
