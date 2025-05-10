@@ -5,20 +5,20 @@ let io: SocketIOServer;
 const userSockets = new Map<string, string>();
 
 export const initSocketio = (server: HttpServer) => {
-io = new SocketIOServer(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-  pingInterval: 15000,
-  pingTimeout: 7000,
-});
+  io = new SocketIOServer(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+    },
+    pingInterval: 25000,
+    pingTimeout: 20000,
+  });
 
   io.on("connection", (socket) => {
     console.log("🧠 Cliente conectado:", socket.id);
 
     socket.on("register-user", (uid: string) => {
-      userSockets.set(uid, socket.id); 
+      userSockets.set(uid, socket.id);
       console.log(`Usuario ${uid} registrado en socket ${socket.id}`);
     });
 
