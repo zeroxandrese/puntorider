@@ -2,15 +2,17 @@ import { Server as SocketIOServer } from "socket.io";
 import { Server as HttpServer } from "http";
 
 let io: SocketIOServer;
-const userSockets = new Map<string, string>(); // Mapa para asociar UID con socket.id
+const userSockets = new Map<string, string>();
 
 export const initSocketio = (server: HttpServer) => {
-  io = new SocketIOServer(server, {
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
-    },
-  });
+io = new SocketIOServer(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+  pingInterval: 15000,
+  pingTimeout: 7000,
+});
 
   io.on("connection", (socket) => {
     console.log("🧠 Cliente conectado:", socket.id);
