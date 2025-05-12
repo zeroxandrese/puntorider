@@ -469,10 +469,6 @@ const tripDriverArrivedService = async ({ driverId, tripId }: { driverId: string
             trip
         });
 
-        io.to(driverId).emit("trip_driverArrived", {
-            trip,
-        });
-
         return { success: true, trip };
 
     } catch (err: any) {
@@ -488,7 +484,7 @@ const startTripAndUpdateRouteService = async ({ driverId, tripId }: { driverId: 
         return;
     };
 
-    await prisma.trip.update({
+   const respnseTrip = await prisma.trip.update({
         where: { uid: tripData.uid },
         data: { tripStarted: true }
     })
@@ -502,8 +498,13 @@ const startTripAndUpdateRouteService = async ({ driverId, tripId }: { driverId: 
     );
 
     // notificación conductor y cliente
-    io.to(driverId).emit("trip_started", { polyline, polylineType: "FINAL" });
     io.to(tripData.usersClientId).emit("trip_started", { polyline, polylineType: "FINAL" });
+
+    return {
+        polyline, 
+        polylineType: "FINAL",
+        trip: respnseTrip
+    }
 };
 
 const endTripService = async ({ driverId, tripId }: { driverId: string; tripId: string }) => {

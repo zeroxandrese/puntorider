@@ -10,8 +10,8 @@ export const initSocketio = (server: HttpServer) => {
       origin: "*",
       methods: ["GET", "POST"],
     },
-    pingInterval: 25000,
-    pingTimeout: 20000,
+    pingInterval: 120000,
+    pingTimeout: 110000
   });
 
   io.on("connection", (socket) => {

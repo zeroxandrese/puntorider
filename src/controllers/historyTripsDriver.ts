@@ -10,24 +10,21 @@ interface AuthenticatedRequest extends Request {
 const historyTripsDriverGetController = async (req: any, res: Response) => {
     const { uid } = req.userAuthDriver;
 
+    if (!uid || uid === "") {
+        res.status(401).json({
+            msg: "Información faltante"
+        });
+    }
+
     try {
-        if ( !uid || uid === "") {
-            res.status(401).json({
-                msg: "Información faltante"
-            });
+        const responseHistory = await historyTripsDriverGetGetService({ id: uid });
 
-        };
-
-        const responsePositionDriver = await historyTripsDriverGetGetService({ id: uid });
-
-        res.status(201).json(responsePositionDriver)
+        return res.status(201).json(responseHistory);
 
     } catch (error) {
         res.sendStatus(501)
-        throw new Error("Problemas con el position driver, comunicate con el admin");
-
+        throw new Error("Problemas con el registro, comunicate con el admin");
     }
-
 };
 
 export { historyTripsDriverGetController }
