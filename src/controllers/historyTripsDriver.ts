@@ -10,16 +10,17 @@ interface AuthenticatedRequest extends Request {
 const historyTripsDriverGetController = async (req: any, res: Response) => {
     const { uid } = req.userAuthDriver;
 
-    if (!uid || uid === "") {
-        res.status(401).json({
-            msg: "Información faltante"
-        });
-    }
-
     try {
+        if (!uid || uid === "") {
+            res.status(401).json({
+                msg: "Información faltante"
+            });
+
+        };
+
         const responseHistory = await historyTripsDriverGetGetService({ id: uid });
 
-        return res.status(201).json(responseHistory);
+        res.status(201).json(responseHistory);
 
     } catch (error) {
         res.sendStatus(501)
@@ -27,4 +28,4 @@ const historyTripsDriverGetController = async (req: any, res: Response) => {
     }
 };
 
-export { historyTripsDriverGetController }
+export { historyTripsDriverGetController };
