@@ -7,6 +7,7 @@ import { calculateDistance } from '../utils/calculateDistance';
 import { orsCalculateDistance } from "../utils/orsDistance";
 import { simulateDriverPositions } from "../utils/simulationPositionDriver";
 import { sendPushNotification } from "../utils/notificationsController";
+import { clearAllRedisKeys } from '../utils/deleteKeyRedis';
 
 const io = getSocketIO();
 
@@ -190,7 +191,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
             console.error("No hay conductores disponibles cerca.");
             return null;
         }
-
+clearAllRedisKeys()
         // Procesar conductores y calcular distancias
         const positions = await Promise.all(
             keys.map(async (key) => {
@@ -256,11 +257,16 @@ const tripPostService = async ({ id }: genericIdProps) => {
         }
 
         // Guardar lista de conductores potenciales para el viaje
-        await redisClient.set(`pendingTrip:${tripDataFind.uid}`, JSON.stringify(driversInRange.map(d => d.driver)));
+        await redisClient.set(`pendingTrip:${tripDataFind.uid}`, JSON.stringify(driversInRange.map(d => d.driver)),
+            { EX: 600 }
+        );
 
         for (const driver of driversInRange) {
-            await redisClient.sAdd(`availableTripsForDriver:${driver.driver}`, tripDataFind.uid);
-            const currentTrips = await redisClient.sMembers(`availableTripsForDriver:${driver.driver}`);
+            const tripKey = `availableTripsForDriver:${driver.driver}`;
+            await redisClient.sAdd(tripKey, tripDataFind.uid);
+            await redisClient.expire(tripKey, 600);
+
+            const currentTrips = await redisClient.sMembers(tripKey);
             console.log(`📦 Trips asignados al conductor ${driver.driver}:`, currentTrips);
         }
 
@@ -484,7 +490,7 @@ const startTripAndUpdateRouteService = async ({ driverId, tripId }: { driverId: 
         return;
     };
 
-   const respnseTrip = await prisma.trip.update({
+    const respnseTrip = await prisma.trip.update({
         where: { uid: tripData.uid },
         data: { tripStarted: true }
     })
@@ -501,7 +507,7 @@ const startTripAndUpdateRouteService = async ({ driverId, tripId }: { driverId: 
     io.to(tripData.usersClientId).emit("trip_started", { polyline, polylineType: "FINAL" });
 
     return {
-        polyline, 
+        polyline,
         polylineType: "FINAL",
         trip: respnseTrip
     }

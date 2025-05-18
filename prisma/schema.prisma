@@ -516,6 +516,7 @@ model ValidationCodeSMS {
 model PriceBaseTrip {
   uid     String   @id @default(auto()) @map("_id") @db.ObjectId
   price   Float    @default(0.6)
+  vehicle String
   status  Boolean  @default(true)
   created DateTime @default(now())
 

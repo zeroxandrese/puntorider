@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import NodeGeocoder from "node-geocoder";
 
-import { tripCalculateInterface, PropsPutCalculateTripOfferedPrice, PropsDeleteCalculateTrip } from '../interface/interface';
+import { tripCalculateInterface, PropsPutCalculateTripOfferedPrice, PropsDeleteCalculateTrip, vehicle } from '../interface/interface';
 import { calculateDistance } from '../utils/calculateDistance';
 
 const options: NodeGeocoder.Options = {
@@ -79,7 +79,7 @@ const tripCalculatePostService = async ({
     );
 
     const basePricePerKmBase = await prisma.priceBaseTrip.findFirst({
-        where: { status: true }
+        where: { status: true, vehicle }
     })
 
     if (!basePricePerKmBase) {
@@ -168,7 +168,7 @@ const tripCalculatePutService = async ({ tripId, uid, offeredPrice, discountCode
 
         let validOfferedPrice: number | null = null;
         if (offeredPrice && typeof offeredPrice === "number") {
-            const minAcceptableOffer = validationTrip.price * 0.5;
+            const minAcceptableOffer = validationTrip.price * 0.7;
             if (offeredPrice >= minAcceptableOffer) {
                 validOfferedPrice = roundToNextHalfOrWhole(offeredPrice);
             }

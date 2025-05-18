@@ -12,7 +12,7 @@ const historyTripsDriverGetGetService = async ({ id }: genericIdProps) => {
             console.error("El UID es obligatorio para buscar el historico de viaje.");
             return;
         }
-        console.log(id, 'desde el service')
+
         const historyTripsDriverResponseService = await prisma.historyTripsDriver.findMany({
             where: { usersDriverId: id }
         });
@@ -21,7 +21,7 @@ const historyTripsDriverGetGetService = async ({ id }: genericIdProps) => {
             console.log("Sin viajes.");
             return;
         }
-        console.log(historyTripsDriverResponseService)
+
         return historyTripsDriverResponseService
 
     } catch (err) {
