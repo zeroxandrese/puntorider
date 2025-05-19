@@ -191,21 +191,37 @@ const tripPostService = async ({ id }: genericIdProps) => {
         // Calcular distancias con conductores
         const distances = await Promise.all(
             filteredByVehicle.map(async (driver) => {
+                try {
+                    const { distance, estimatedArrival } = await calculateDistance(
+                        tripDataFind.latitudeStart,
+                        tripDataFind.longitudeStart,
+                        driver.position.latitude,
+                        driver.position.longitude
+                    );
 
-                const { distance, estimatedArrival } = await calculateDistance(
-                    tripDataFind.latitudeStart,
-                    tripDataFind.longitudeStart,
-                    driver.position.latitude,
-                    driver.position.longitude
-                );
-
-                return { driver: driver.userId, distance, estimatedArrival };
+                    return { driver: driver.userId, distance, estimatedArrival };
+                } catch (error) {
+                    console.error("❌ Error al calcular distancia con el conductor", driver.userId, ":", error);
+                    return null;
+                }
             })
         );
 
-        // Filtrar conductores dentro del rango
-        const reasonableDistance = 30; // en kilómetros
-        const driversInRange = distances.filter(driver => driver.distance <= reasonableDistance);
+        // Filtramos los null y aseguramos el tipado
+        const validDistances = distances.filter(
+            (d): d is { driver: string; distance: number; estimatedArrival: any } => d !== null
+        );
+
+        if (validDistances.length === 0) {
+            console.error("No se pudieron calcular distancias con ningún conductor válido.");
+            return {
+                tripId: "",
+                message: "No se pudieron encontrar conductores cercanos en este momento.",
+            };
+        }
+
+        // ✅ Usamos validDistances, no distances
+        const driversInRange = validDistances.filter(driver => driver.distance <= 30);
 
         if (driversInRange.length === 0) {
             console.error("No hay conductores disponibles dentro de tu zona.");
