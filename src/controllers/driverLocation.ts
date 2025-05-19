@@ -7,7 +7,7 @@ interface AuthenticatedRequest extends Request {
     }
 }
 
-const driverPostLocationController = async (req: AuthenticatedRequest, res: Response) => {
+const driverPostLocationController = async (req: any, res: Response) => {
     const { uid, } = req.userAuthDriver;
     const { latitude, longitude } = req.body
 
