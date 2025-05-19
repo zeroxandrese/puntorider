@@ -2,55 +2,15 @@ import { PrismaClient } from "@prisma/client";
 import { redisClient } from '../config/redisConnection';
 import { getSocketIO } from "../utils/initSocket";
 
-import { genericIdProps, tripPutProps, tripDeleteProps, userDriver, vehicle } from '../interface/interface';
+import { genericIdProps, tripPutProps, tripDeleteProps } from '../interface/interface';
 import { calculateDistance } from '../utils/calculateDistance';
 import { orsCalculateDistance } from "../utils/orsDistance";
 import { simulateDriverPositions } from "../utils/simulationPositionDriver";
 import { sendPushNotification } from "../utils/notificationsController";
-import { clearAllRedisKeys } from '../utils/deleteKeyRedis';
 
 const io = getSocketIO();
 
 const prisma = new PrismaClient
-
-const createTemporaryDriver = async (tripDataFind: any, vehicle: string) => {
-    if (!tripDataFind) {
-        throw new Error("No se encontraron datos del viaje.");
-    }
-
-    const driverId = await prisma.usersDriver.findFirst({
-        where: { uid: "67fedde52b10f857244d8d35", status: true }
-    });
-
-    if (!driverId) {
-        console.error("sin driveruser")
-        return null
-    }
-
-    const latOffset = (Math.random() - 0.5) * 0.02;
-    const lngOffset = (Math.random() - 0.5) * 0.02;
-
-    const driverData = {
-        latitude: tripDataFind.latitudeStart + latOffset,
-        longitude: tripDataFind.longitudeStart + lngOffset,
-        vehicleType: vehicle,
-    };
-
-    try {
-        if (!redisClient.isOpen) {
-
-            await redisClient.connect();
-        }
-        await redisClient.del(`positionDriver:${driverId.uid}`);
-
-        await redisClient.set(`positionDriver:${driverId.uid}`, JSON.stringify(driverData), { EX: 300 });
-
-    } catch (error) {
-        console.error("❌ Error al guardar en Redis:", error);
-    }
-
-    return driverId;
-};
 
 const createTemporaryDriver2 = async (tripDataFind: any, vehicle: string) => {
     if (!tripDataFind) {
@@ -120,7 +80,6 @@ const tripGetService = async ({ id }: genericIdProps) => {
 
 const tripFindAvailableService = async ({ id }: genericIdProps) => {
     try {
-        console.log("🔍 Buscando viajes disponibles para el conductor:", id);
 
         if (!redisClient.isOpen) {
             console.log("🧩 Redis no estaba conectado. Conectando...");
@@ -182,7 +141,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
             return null;
         }
 
-        await createTemporaryDriver(tripDataFind, "VEHICLE");
+        //await createTemporaryDriver(tripDataFind, "VEHICLE");
         await createTemporaryDriver2(tripDataFind, "MOTO");
 
         // Obtener conductores disponibles
@@ -191,7 +150,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
             console.error("No hay conductores disponibles cerca.");
             return null;
         }
-clearAllRedisKeys()
+
         // Procesar conductores y calcular distancias
         const positions = await Promise.all(
             keys.map(async (key) => {

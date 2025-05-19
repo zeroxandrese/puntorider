@@ -71,6 +71,7 @@ model UsersDriver {
   numberPhone         String?  @default("0")
   hashValidationPhone String?
   password            String
+  vehicleType         String?
   status              Boolean  @default(true)
   google              Boolean  @default(false)
   img                 String?

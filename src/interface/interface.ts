@@ -288,3 +288,9 @@ export interface TokenNotificationProps {
   uid: string
 }
 
+export interface locationDriverProps {
+  latitude: number,
+  longitude: number,
+  uid: string
+}
+
