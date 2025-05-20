@@ -36,8 +36,8 @@ const commentClientPostService = async ({ comment, usersClientId, tripId }: comm
                 tripId
             }
         });
-console.log(tripId, comment)
-        io.to(tripId).emit('new-comment', comment);
+console.log(tripId, commentResponseService,"desde el comment Pos del client")
+        io.to(tripId).emit('new-comment', commentResponseService);
 
         return commentResponseService
 
