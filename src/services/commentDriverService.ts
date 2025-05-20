@@ -36,7 +36,7 @@ const commentDriverPostService = async ({ comment, usersDriverId, tripId }: comm
                 tripId
             }
         });
-
+console.log(tripId, comment)
         io.to(tripId).emit('new-comment', comment);
 
         return commentResponseService

@@ -36,8 +36,8 @@ const commentClientPostService = async ({ comment, usersClientId, tripId }: comm
                 tripId
             }
         });
-
-        io.to(tripId).emit('new-comment', commentResponseService);
+console.log(tripId, comment)
+        io.to(tripId).emit('new-comment', comment);
 
         return commentResponseService
 
