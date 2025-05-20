@@ -42,7 +42,7 @@ const commentDriverPostController = async (req: any, res: Response) => {
             });
             return;
         };
-
+console.log("desde el controller del Postdriver")
         const responseComment = await commentDriverPostService({ comment, usersDriverId: uid, tripId: id });
 
         res.status(201).json(responseComment)

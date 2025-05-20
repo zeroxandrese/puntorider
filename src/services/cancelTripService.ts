@@ -18,7 +18,7 @@ const cancelTripClientsPostService = async ({ tripId, uid }: cancelTripProps) =>
         usersClientId: uid,
       },
     });
-
+console.log(validationCalculateTrip)
     if (validationCalculateTrip) {
       const tripCancelResponseService = await prisma.calculateTrip.update({
         where: {
@@ -40,7 +40,7 @@ const cancelTripClientsPostService = async ({ tripId, uid }: cancelTripProps) =>
         usersClientId: uid,
       },
     });
-
+console.log(validation)
     if (!validation) {
       console.error("viaje no existe");
       return null;
@@ -78,7 +78,7 @@ const cancelTripClientsPostService = async ({ tripId, uid }: cancelTripProps) =>
         cancelForUser: true,
       },
     });
-
+console.log(tripCancelResponseService.usersDriverId,"uiid del driver desde el cancel")
     io.to(tripCancelResponseService.usersDriverId).emit("trip_canceled", {
       tripId: tripCancelResponseService.uid,
     });
