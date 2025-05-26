@@ -292,9 +292,16 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             return { success: false, message: "Este conductor no puede aceptar este viaje." };
         }
 
+        // ✅ Verificar si ya fue aceptado por otro conductor
+        const existingTrip = await prisma.trip.findFirst({
+            where: { tripCalculateId: tripId }
+        });
+        if (existingTrip) {
+            return { success: false, message: "El viaje ya fue aceptado por otro conductor." };
+        }
+
         // Eliminar la key para evitar que otros acepten
         await redisClient.del(`pendingTrip:${tripId}`);
-
         await redisClient.sRem(`availableTripsForDriver:${driverId}`, tripId);
 
         for (const driver of pendingDrivers) {
