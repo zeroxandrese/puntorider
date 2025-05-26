@@ -18,7 +18,7 @@ const cancelTripClientPostController = async (req: any, res: Response) => {
             });
 
         };
-console.log('por el controller de cancel')
+
         const responseContactUs = await cancelTripClientsPostService({ tripId: id, uid });
 
         res.status(201).json(responseContactUs)

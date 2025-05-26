@@ -182,6 +182,12 @@ const tripPostService = async ({ id }: genericIdProps) => {
 
         if (filteredByVehicle.length === 0) {
             console.error("No hay conductores disponibles con el tipo de vehículo correcto.");
+
+            await prisma.calculateTrip.update({
+                where: { uid: tripDataFind.uid },
+                data: { status: false }
+            });
+
             return {
                 tripId: "",
                 message: "No hay conductores disponibles con el tipo de vehículo solicitado."
