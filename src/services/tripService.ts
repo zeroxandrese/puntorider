@@ -12,6 +12,47 @@ const io = getSocketIO();
 
 const prisma = new PrismaClient
 
+const createTemporaryDriver = async (tripDataFind: any, vehicle: string) => {
+    if (!tripDataFind) {
+        throw new Error("No se encontraron datos del viaje.");
+    }
+
+    const driverId = await prisma.usersDriver.findFirst({
+        where: { uid: "67fedde52b10f857244d8d35", status: true }
+    });
+
+    if (!driverId) {
+        console.error("sin driveruser")
+        return null
+    }
+
+    const latOffset = (Math.random() - 0.5) * 0.02;
+    const lngOffset = (Math.random() - 0.5) * 0.02;
+
+    const driverData = {
+        latitude: tripDataFind.latitudeStart + latOffset,
+        longitude: tripDataFind.longitudeStart + lngOffset,
+        vehicleType: vehicle,
+    };
+
+    try {
+        if (!redisClient.isOpen) {
+
+            await redisClient.connect();
+        }
+        await redisClient.del(`positionDriver:${driverId.uid}`);
+
+
+        await redisClient.set(`positionDriver:${driverId.uid}`, JSON.stringify(driverData), { EX: 300 });
+
+    } catch (error) {
+        console.error("❌ Error al guardar en Redis:", error);
+    }
+
+    return driverId;
+};
+
+
 const createTemporaryDriver2 = async (tripDataFind: any, vehicle: string) => {
     if (!tripDataFind) {
         throw new Error("No se encontraron datos del viaje.");
@@ -141,7 +182,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
             return null;
         }
 
-        //await createTemporaryDriver(tripDataFind, "VEHICLE");
+        await createTemporaryDriver(tripDataFind, "VEHICLE");
         await createTemporaryDriver2(tripDataFind, "MOTO");
 
         // Obtener conductores disponibles
@@ -292,7 +333,7 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             return { success: false, message: "Este conductor no puede aceptar este viaje." };
         }
 
-        // ✅ Verificar si ya fue aceptado por otro conductor
+        // Verificar si ya fue aceptado por otro conductor
         const existingTrip = await prisma.trip.findFirst({
             where: { tripCalculateId: tripId }
         });
