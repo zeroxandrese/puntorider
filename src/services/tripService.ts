@@ -182,7 +182,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
             return null;
         }
 
-        await createTemporaryDriver(tripDataFind, "VEHICLE");
+        //await createTemporaryDriver(tripDataFind, "VEHICLE");
         await createTemporaryDriver2(tripDataFind, "MOTO");
 
         // Obtener conductores disponibles
@@ -439,8 +439,6 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             vehicle: vehicleData,
         });
 
-        io.to(driverId).emit("trip_assigned");
-
         //Calculo del polyline del conductor
         const driverLocationStr = await redisClient.get(`positionDriver:${driverId}`);
         if (!driverLocationStr) {
@@ -466,13 +464,13 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
         io.to(driverId).emit("driver_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
         io.to(trip.usersClientId).emit("client_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
 
-        await simulateDriverPositions({
+/*         await simulateDriverPositions({
             driverId,
             polyline,
             userIdClient: trip.usersClientId
-        });
+        }); */
 
-        return { success: true, trip, user: userResponse };
+        return { success: true, trip, user: userResponse, arrivalInitial: duration };
 
     } catch (err: any) {
         console.error("Error al aceptar el viaje:", err.message);
@@ -500,7 +498,7 @@ const tripDriverArrivedService = async ({ driverId, tripId }: { driverId: string
             sendPushNotification(validationTokenNotification?.fcmToken, "Un conductor te espera.");
         }
 
-        io.to(tripDataFind.usersClientId).emit("trip_driverArrived", {
+        io.to(tripDataFind.usersClientId).emit("driver_arrived", {
             trip
         });
 

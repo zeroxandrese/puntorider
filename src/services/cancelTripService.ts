@@ -18,7 +18,7 @@ const cancelTripClientsPostService = async ({ tripId, uid }: cancelTripProps) =>
         usersClientId: uid,
       },
     });
-console.log(validationCalculateTrip)
+    console.log(validationCalculateTrip)
     if (validationCalculateTrip) {
       const tripCancelResponseService = await prisma.calculateTrip.update({
         where: {
@@ -40,7 +40,7 @@ console.log(validationCalculateTrip)
         usersClientId: uid,
       },
     });
-console.log(validation)
+    console.log(validation)
     if (!validation) {
       console.error("viaje no existe");
       return null;
@@ -78,7 +78,7 @@ console.log(validation)
         cancelForUser: true,
       },
     });
-console.log(tripCancelResponseService.usersDriverId,"uiid del driver desde el cancel")
+    console.log(tripCancelResponseService.usersDriverId, "uiid del driver desde el cancel")
     io.to(tripCancelResponseService.usersDriverId).emit("trip_canceled", {
       tripId: tripCancelResponseService.uid,
     });
@@ -96,7 +96,7 @@ console.log(tripCancelResponseService.usersDriverId,"uiid del driver desde el ca
     await redisClient.del(`pendingTrip:${tripId}`);
 
     for (const driver of pendingDrivers) {
-        await redisClient.sRem(`availableTripsForDriver:${driver}`, tripId);
+      await redisClient.sRem(`availableTripsForDriver:${driver}`, tripId);
     }
 
 
@@ -217,6 +217,10 @@ const cancelTripDriverPostService = async ({ tripId, uid }: cancelTripProps) => 
         price: tripDataFind.price,
         estimatedArrival: driver.estimatedArrival,
       });
+    });
+
+    io.to(updatedTrip.usersClientId).emit("trip_canceled_by_driver", {
+      tripId: tripDataFind.uid,
     });
 
     return { success: true, message: "Viaje reenviado a nuevos conductores." };
