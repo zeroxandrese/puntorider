@@ -5,17 +5,17 @@ import { commentDriverPostController, commentDriverPutController, commentDriverD
 import { validarCampos } from "../middelware/validar-campos";
 import { findIdCommentDriver } from "../helpers/db-validators";
 import validarJWTDriver from "../middelware/validar-jwt-driver";
-import { findIdDriver } from "../helpers/db-validators";
 
 const router = Router();
 
 router.get("/:id", 
     validarJWTDriver,
     check('id', 'El id no es valido').isMongoId(),
-    check('id').custom(findIdDriver),
     commentDriverGetController);
 
-router.post("/", validarJWTDriver, validarCampos, commentDriverPostController);
+router.post("/:id", validarJWTDriver, 
+    check('id', 'El id no es valido').isMongoId(),
+    validarCampos, commentDriverPostController);
 
 router.put("/:id", [
     validarJWTDriver,
