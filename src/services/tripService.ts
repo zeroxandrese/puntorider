@@ -461,8 +461,8 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
         };
 
         // notificación conductor y cliente
-        io.to(driverId).emit("driver_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
-        io.to(trip.usersClientId).emit("client_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
+        io.to(driverId).emit("client_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
+        io.to(trip.usersClientId).emit("driver_route_accepted", { polyline, polylineType: "TEMP", positionDriverEvent });
 
 /*         await simulateDriverPositions({
             driverId,
