@@ -20,6 +20,8 @@ router.get("/", [
 
 router.get("/available", validarJWTDriver, tripFindAvailableController);
 
+router.get("/Driver", validarJWTDriver, tripFindAvailableController);
+
 router.post("/", validarJWT, tripPostController);
 
 router.post("/driverAccepted/:id", validarJWTDriver, tripAcceptController);

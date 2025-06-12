@@ -119,6 +119,30 @@ const tripGetService = async ({ id }: genericIdProps) => {
     }
 };
 
+const tripGetDriverService = async ({ id }: genericIdProps) => {
+
+    try {
+
+        const response = await prisma.trip.findFirst({ where: { usersDriverId: id, status: true } });
+        if (!response) {
+            return;
+        }
+        const userClientData = await prisma.usersClient.findFirst({ where: { uid: response.usersClientId } });
+
+        const tripResponseService = {
+            response,
+            userClientData
+        }
+
+        return tripResponseService
+
+    } catch (err) {
+        console.error("Error en el servicio del viaje:", err);
+        return null;
+
+    }
+};
+
 const tripFindAvailableService = async ({ id }: genericIdProps) => {
     try {
 
@@ -727,5 +751,5 @@ const tripDeleteService = async ({ id }: tripDeleteProps) => {
 export {
     tripPostService, tripPutService,
     tripDeleteService, tripGetService,
-    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService, endTripService, tripFindAvailableService
+    tripAcceptService, tripDriverArrivedService, startTripAndUpdateRouteService, endTripService, tripFindAvailableService, tripGetDriverService
 };
