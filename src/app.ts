@@ -16,7 +16,7 @@ const app = express();
 const server = createServer(app);
 
 // create temp folder
-const tmpDir = path.join(__dirname, 'tmp');
+const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) {
   fs.mkdirSync(tmpDir);
 }
