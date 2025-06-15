@@ -3,6 +3,8 @@ import { createServer } from "http";
 import "dotenv/config";
 import cors from "cors";
 import { dbConection } from "./config/dbcontection";
+import fs from 'fs';
+
 import { router } from "./routes";
 import path from "path";
 
@@ -13,10 +15,16 @@ const PORT = Number(process.env.PORT) || 3001;
 const app = express();
 const server = createServer(app);
 
-// Middleware para servir archivos estáticos desde el directorio 'public'
+// create temp folder
+const tmpDir = path.join(__dirname, 'tmp');
+if (!fs.existsSync(tmpDir)) {
+  fs.mkdirSync(tmpDir);
+}
+
+// Middleware  'public'
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Ruta para servir el archivo HTML específico en la ruta '/'
+// Ruta '/'
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
