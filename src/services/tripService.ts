@@ -207,7 +207,7 @@ const tripPostService = async ({ id }: genericIdProps) => {
         }
 
         //await createTemporaryDriver(tripDataFind, "VEHICLE");
-        await createTemporaryDriver2(tripDataFind, "MOTO");
+        //await createTemporaryDriver2(tripDataFind, "MOTO");
 
         // Obtener conductores disponibles
         const keys = await redisClient.keys('positionDriver:*');
