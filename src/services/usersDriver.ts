@@ -1,13 +1,19 @@
 import { PrismaClient } from "@prisma/client";
+import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import * as bcryptjs from 'bcryptjs';
 import CryptoJS from 'crypto-js';
-
+import fs from 'fs';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { generateJwtDriver } from '../helpers/generate-jwt-driver';
 
-import { UserClientUID, UserDriverUpdate, DriverUserPost } from '../interface/interface';
+import { UserClientUID, UserDriverUpdate, DriverUserPost, genericIdProps, userDriver } from '../interface/interface';
+
+export interface PutAvatarParams {
+  uid: string;
+  file: Express.Multer.File;
+}
 
 
 const prisma = new PrismaClient
@@ -25,6 +31,35 @@ const decryptData = (encryptedPhone: string) => {
     return bytes.toString(CryptoJS.enc.Utf8);
 };
 
+
+const usersDriverGetService = async ({ id }: genericIdProps) => {
+
+    try {
+
+        const userResponseService = await prisma.usersDriver.findFirst({
+            where: { uid: id, status: true }
+        });
+
+        if (!userResponseService) {
+            console.error("No hay user.");
+            return {
+                message: "No hay user."
+            };
+        }
+
+
+        const emailResponse = userResponseService.email ? decryptData(userResponseService.email) : null;
+        const phone = userResponseService.numberPhone ? decryptData(userResponseService.numberPhone) : null;
+
+        const user = { ...userResponseService, email: emailResponse, numberPhone: phone };
+
+        return user
+
+    } catch (err) {
+        throw new Error("Error en el servicio del user");
+
+    }
+};
 
 const usersDriverPostService = async ({ email, password, code }: DriverUserPost) => {
 
@@ -64,6 +99,34 @@ const usersDriverPostService = async ({ email, password, code }: DriverUserPost)
 
     }
 };
+
+const usersDriverPutAvatarService = async ({ file, uid }: PutAvatarParams) => {
+  try {
+
+  const result: UploadApiResponse = await cloudinary.uploader.upload(file.path, {
+    folder: 'avatars',
+    public_id: `driver_${uid}`,              // optional: dedupe by user
+    overwrite: true,                        // optional
+  });
+
+  // 2) Clean up the temp upload on disk
+  fs.unlink(file.path, err => {
+    if (err) console.warn('Failed to remove temp file:', err);
+  });
+
+  // 3) Persist the new URL in your database
+  const updatedUser = await prisma.usersDriver.update({
+    where: { uid },
+    data: { img: result.secure_url },
+  });
+
+  return updatedUser
+
+  } catch (err: any) {
+    console.error('Error subiendo avatar:', err);
+    throw new Error("Error interno al subir avatar");
+  }
+}
 
 const usersDriverPutService = async ({ numberPhone, name, lastName, email, uid }: UserDriverUpdate) => {
 
@@ -125,4 +188,4 @@ const usersDriverDeleteService = async ({ uid }: UserClientUID) => {
     }
 };
 
-export { usersDriverPostService, usersDriverPutService, usersDriverDeleteService };
+export { usersDriverPostService, usersDriverPutService, usersDriverDeleteService, usersDriverGetService, usersDriverPutAvatarService };

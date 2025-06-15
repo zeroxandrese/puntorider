@@ -12,7 +12,7 @@ const io = getSocketIO();
 
 const prisma = new PrismaClient
 
-const createTemporaryDriver = async (tripDataFind: any, vehicle: string) => {
+/* const createTemporaryDriver = async (tripDataFind: any, vehicle: string) => {
     if (!tripDataFind) {
         throw new Error("No se encontraron datos del viaje.");
     }
@@ -91,7 +91,7 @@ const createTemporaryDriver2 = async (tripDataFind: any, vehicle: string) => {
     }
 
     return driverId;
-};
+}; */
 
 const tripGetService = async ({ id }: genericIdProps) => {
 
@@ -357,7 +357,7 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             return { success: false, message: "Este conductor no puede aceptar este viaje." };
         }
 
-        // Verificar si ya fue aceptado por otro conductor
+        // Verificar trip true
         const existingTrip = await prisma.trip.findFirst({
             where: { tripCalculateId: tripId }
         });
@@ -365,7 +365,7 @@ const tripAcceptService = async ({ driverId, tripId }: { driverId: string; tripI
             return { success: false, message: "El viaje ya fue aceptado por otro conductor." };
         }
 
-        // Eliminar la key para evitar que otros acepten
+        // Eliminar la key para evitar duplicidad
         await redisClient.del(`pendingTrip:${tripId}`);
         await redisClient.sRem(`availableTripsForDriver:${driverId}`, tripId);
 
