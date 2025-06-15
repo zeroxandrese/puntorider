@@ -78,7 +78,7 @@ const usersDriverPutController = async (req: any, res: Response) => {
 
 const usersDriverPutAvatarController = async (req: any, res: Response) => {
     const { uid } = req.userAuthDriver;
-    const file = req.file as Express.Multer.File;
+    const file = req.file;
 
     try {
         if (!uid || uid === "" || !file ) {

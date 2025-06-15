@@ -11,10 +11,15 @@ import { generateJwtDriver } from '../helpers/generate-jwt-driver';
 import { UserClientUID, UserDriverUpdate, DriverUserPost, genericIdProps, userDriver } from '../interface/interface';
 
 export interface PutAvatarParams {
-  uid: string;
-  file: Express.Multer.File;
+    uid: string;
+    file: Express.Multer.File;
 }
 
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const prisma = new PrismaClient
 
@@ -101,31 +106,29 @@ const usersDriverPostService = async ({ email, password, code }: DriverUserPost)
 };
 
 const usersDriverPutAvatarService = async ({ file, uid }: PutAvatarParams) => {
-  try {
+    try {
 
-  const result: UploadApiResponse = await cloudinary.uploader.upload(file.path, {
-    folder: 'avatars',
-    public_id: `driver_${uid}`,              // optional: dedupe by user
-    overwrite: true,                        // optional
-  });
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+            folder: 'avatars',
+            public_id: uid,
+            overwrite: true,
+        });
 
-  // 2) Clean up the temp upload on disk
-  fs.unlink(file.path, err => {
-    if (err) console.warn('Failed to remove temp file:', err);
-  });
+        // 2) elimina el temp file
+        fs.unlinkSync(file.path);
 
-  // 3) Persist the new URL in your database
-  const updatedUser = await prisma.usersDriver.update({
-    where: { uid },
-    data: { img: result.secure_url },
-  });
+        // 3) actualiza tu tabla de drivers con la nueva URL
+        const updated = await prisma.usersDriver.update({
+            where: { uid },
+            data: { img: uploadResult.secure_url }
+        });
 
-  return updatedUser
+        return updated;
 
-  } catch (err: any) {
-    console.error('Error subiendo avatar:', err);
-    throw new Error("Error interno al subir avatar");
-  }
+    } catch (err: any) {
+        console.error('Error subiendo avatar:', err);
+        throw new Error("Error interno al subir avatar");
+    }
 }
 
 const usersDriverPutService = async ({ numberPhone, name, lastName, email, uid }: UserDriverUpdate) => {
