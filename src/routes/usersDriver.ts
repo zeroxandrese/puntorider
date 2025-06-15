@@ -1,7 +1,5 @@
 import { Router } from "express";
-import multer from 'multer';
-
-const upload = multer();
+import upload from '../middelware/multer';
 
 import { usersDriverPostController, usersDriverPutController, usersDriverDeleteController, 
     usersDriverGetController, usersDriverPutAvatarController } from "../controllers/usersDriver";

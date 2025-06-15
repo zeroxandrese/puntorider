@@ -6,6 +6,6 @@ import validarJWTDriver from "../middelware/validar-jwt-driver";
 
 const router = Router();
 
-router.get("/", validarJWTDriver, validarCampos, vehiclesGetController);
+router.get("/", validarJWTDriver, vehiclesGetController);
 
 export { router };

@@ -114,10 +114,10 @@ const usersDriverPutAvatarService = async ({ file, uid }: PutAvatarParams) => {
             overwrite: true,
         });
 
-        // 2) elimina el temp file
+        // delete temp files
         fs.unlinkSync(file.path);
 
-        // 3) actualiza tu tabla de drivers con la nueva URL
+        // update driver
         const updated = await prisma.usersDriver.update({
             where: { uid },
             data: { img: uploadResult.secure_url }

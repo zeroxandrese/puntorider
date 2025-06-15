@@ -89,6 +89,7 @@ model UsersDriver {
   rejectedTripForDriver RejectedTripForDriver[] @relation("TripCancelDriverID")
   driversSurveys        DriversSurveys[]        @relation("DriversSurveysDriverID")
   contactUsDriver       ContactUsDriver[]       @relation("UserDriverContacUsDriver")
+  weeklyDriverEarnings  WeeklyDriverEarnings[]  @relation("UserDriverEarningsForUs")
 
   @@map("usersDriver")
 }
@@ -611,4 +612,21 @@ model CodeRegisterDriver {
   created DateTime @default(now())
 
   @@map("codeRegisterDriver")
+}
+
+model WeeklyDriverEarnings {
+  uid                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  usersDriverId          String   @db.ObjectId
+  weekStart              DateTime
+  weekEnd                DateTime
+  totalOfferedPrice      Float
+  totalPriceWithDiscount Float
+  totalDiscountDifference Float
+  created                DateTime @default(now())
+
+  // Relaciones (opcional)
+  usersDriver UsersDriver @relation("UserDriverEarningsForUs", fields: [usersDriverId], references: [uid])
+
+  @@index([usersDriverId, weekStart, weekEnd])
+  @@map("weeklyDriverEarnings")
 }
