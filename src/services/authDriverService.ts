@@ -52,9 +52,10 @@ const verifyToken = async ({ uid }: UIDObject) => {
 const loginDriver = async ({ email, password }: PropsLoginDriver) => {
 
     try {
-
+console.log(email)
+console.log(password)
         const emailEncrypt = encryptEmail(email)
-
+console.log(emailEncrypt)
         const userResponse = await prisma.usersDriver.findFirst({
             where: { hashValidationEmail: emailEncrypt }
         });

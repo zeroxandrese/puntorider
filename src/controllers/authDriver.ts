@@ -21,7 +21,8 @@ const verifyTokenDriverController = async (req: any, res: Response) => {
 
 const loginDriverController = async (req: Request, res: Response) => {
     const { email, password } = req.body
-
+console.log(email,"controller")
+console.log(password,"controller")
     try {
         if (!email || !password || email === "" || password === "") {
             res.status(401).json({
