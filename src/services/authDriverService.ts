@@ -59,7 +59,8 @@ console.log(emailEncrypt)
         const userResponse = await prisma.usersDriver.findFirst({
             where: { hashValidationEmail: emailEncrypt }
         });
-
+console.log(userResponse,"userResponse")
+console.log(!userResponse,"userResponse !")
         if (!userResponse) {
             throw new Error("The user is incorrect")
         }
@@ -74,7 +75,7 @@ console.log(emailEncrypt)
             throw new Error("El email / Password son incorrectos")
 
         }
-
+console.log(findPassword,"userResponse !")
         //Generar JWT
         const token = await generateJwtDriver(userResponse.uid);
 
