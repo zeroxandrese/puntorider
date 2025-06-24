@@ -52,15 +52,13 @@ const verifyToken = async ({ uid }: UIDObject) => {
 const loginDriver = async ({ email, password }: PropsLoginDriver) => {
 
     try {
-console.log(email)
-console.log(password)
+
         const emailEncrypt = encryptEmail(email)
-console.log(emailEncrypt)
+
         const userResponse = await prisma.usersDriver.findFirst({
             where: { hashValidationEmail: emailEncrypt }
         });
-console.log(userResponse,"userResponse")
-console.log(!userResponse,"userResponse !")
+
         if (!userResponse) {
             throw new Error("The user is incorrect")
         }
@@ -69,13 +67,13 @@ console.log(!userResponse,"userResponse !")
         if (!userResponse.status) {
             throw new Error("User disable")
         }
-
+console.log(userResponse.status,"status ")
         const findPassword = await bcryptjs.compareSync(password, userResponse!.password);
         if (!findPassword) {
             throw new Error("El email / Password son incorrectos")
 
         }
-console.log(findPassword,"userResponse !")
+        console.log(findPassword,"userResponse !")
         //Generar JWT
         const token = await generateJwtDriver(userResponse.uid);
 
