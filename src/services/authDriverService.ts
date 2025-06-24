@@ -51,54 +51,53 @@ const verifyToken = async ({ uid }: UIDObject) => {
 
 const loginDriver = async ({ email, password }: PropsLoginDriver) => {
 
-    try {
+  const emailEncrypt = encryptEmail(email);
+  const userResponse = await prisma.usersDriver.findFirst({
+    where: { hashValidationEmail: emailEncrypt },
+    select: {
+      uid: true,
+      password: true,
+      status: true,
+      email: true,
+      numberPhone: true,
+      vehicleType: true,
+    },
+  });
 
-        const emailEncrypt = encryptEmail(email)
+  if (!userResponse) {
+    throw new Error("Email o contraseña incorrectos");
+  }
 
-        const userResponse = await prisma.usersDriver.findFirst({
-            where: { hashValidationEmail: emailEncrypt },
-            select: {
-                uid: true,
-                password: true,
-                status: true,
-                email: true,
-                numberPhone: true,
-                vehicleType: true
-            }
-        });
+  // 2) Usuario activo?
+  if (!userResponse.status) {
+    throw new Error("Usuario deshabilitado"); 
+  }
+  console.log("hash almacenado:", userResponse.password);
 
-        if (!userResponse) {
-            throw new Error("The user is incorrect")
-        }
+  // 3) Comparar contraseña (asíncrona)
+  const isMatch = await bcryptjs.compare(password, userResponse.password);
+  console.log("¿Coincide la contraseña?", isMatch);
 
-        //Validacion usuario activo
-        if (!userResponse.status) {
-            throw new Error("User disable")
-        }
-        console.log(userResponse.status, "status ")
-        const findPassword = bcryptjs.compareSync(password, userResponse!.password);
-        if (!findPassword) {
-            throw new Error("El email / Password son incorrectos")
+  if (!isMatch) {
+    throw new Error("Email o contraseña incorrectos");
+  }
 
-        }
-        console.log(findPassword, "userResponse !")
-        //Generar JWT
-        const token = await generateJwtDriver(userResponse.uid);
+  // 4) Generar token
+  const token = await generateJwtDriver(userResponse.uid);
 
-        const emailDecrypt = userResponse.email ? decryptData(userResponse.email) : "";
-        const phoneDecrypt = userResponse.numberPhone ? decryptData(userResponse.numberPhone) : "";
+  // 5) Devolver datos desencriptados
+  const emailDecrypt   = userResponse.email       ? decryptData(userResponse.email)       : "";
+  const phoneDecrypt   = userResponse.numberPhone ? decryptData(userResponse.numberPhone) : "";
 
-        const user = { ...userResponse, email: emailDecrypt, numberPhone: phoneDecrypt };
-
-        return {
-            user,
-            token
-        };
-
-
-    } catch (err) {
-        throw new Error('Algo salio mal, contacte con el administrador');
-    }
+  return {
+    user: {
+      uid: userResponse.uid,
+      email: emailDecrypt,
+      numberPhone: phoneDecrypt,
+      vehicleType: userResponse.vehicleType,
+    },
+    token,
+  };
 };
 
 export {
