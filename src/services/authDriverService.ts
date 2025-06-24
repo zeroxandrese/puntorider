@@ -56,7 +56,15 @@ const loginDriver = async ({ email, password }: PropsLoginDriver) => {
         const emailEncrypt = encryptEmail(email)
 
         const userResponse = await prisma.usersDriver.findFirst({
-            where: { hashValidationEmail: emailEncrypt }
+            where: { hashValidationEmail: emailEncrypt },
+            select: {
+                uid: true,
+                password: true,
+                status: true,
+                email: true,
+                numberPhone: true,
+                vehicleType: true
+            }
         });
 
         if (!userResponse) {
@@ -67,24 +75,18 @@ const loginDriver = async ({ email, password }: PropsLoginDriver) => {
         if (!userResponse.status) {
             throw new Error("User disable")
         }
-console.log(userResponse.status,"status ")
-        const findPassword = await bcryptjs.compareSync(password, userResponse!.password);
+        console.log(userResponse.status, "status ")
+        const findPassword = bcryptjs.compareSync(password, userResponse!.password);
         if (!findPassword) {
             throw new Error("El email / Password son incorrectos")
 
         }
-        console.log(findPassword,"userResponse !")
+        console.log(findPassword, "userResponse !")
         //Generar JWT
         const token = await generateJwtDriver(userResponse.uid);
 
-        let emailDecrypt = ""
-        let phoneDecrypt = ""
-
-        if (userResponse?.email && userResponse?.numberPhone) {
-            emailDecrypt = decryptData(userResponse?.email)
-            phoneDecrypt = decryptData(userResponse?.numberPhone)
-            
-        }
+        const emailDecrypt = userResponse.email ? decryptData(userResponse.email) : "";
+        const phoneDecrypt = userResponse.numberPhone ? decryptData(userResponse.numberPhone) : "";
 
         const user = { ...userResponse, email: emailDecrypt, numberPhone: phoneDecrypt };
 
