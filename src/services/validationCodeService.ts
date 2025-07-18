@@ -49,11 +49,11 @@ const validationCodePostService = async ({ phoneNumber }: phoneNumberProps) => {
         });
 
         try {
-            /*             await client.messages.create({
-                            body: `Hola, usa este código para continuar en Puntoride: ${code}. ¡Gracias por elegirnos!`,
-                            to: `+51${phoneNumber}`,
-                            from: '+19896583157',
-                        }); */
+            await client.messages.create({
+                body: `Hola, usa este código para continuar en Puntoride: ${code}. ¡Gracias por elegirnos!`,
+                to: `+51${phoneNumber}`,
+                from: '+18587805265',
+            });
         } catch (twilioError) {
             console.error("Error enviando SMS:", twilioError);
             throw new Error("Error al enviar el código de validación.");
