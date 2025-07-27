@@ -51,7 +51,7 @@ const validationCodePostService = async ({ phoneNumber }: phoneNumberProps) => {
         try {
             await client.messages.create({
                 body: `Hola, usa este código para continuar en Puntoride: ${code}. ¡Gracias por elegirnos!`,
-                to: `+51${phoneNumber}`,
+                to: `+58${phoneNumber}`,
                 from: '+18587805265',
             });
         } catch (twilioError) {

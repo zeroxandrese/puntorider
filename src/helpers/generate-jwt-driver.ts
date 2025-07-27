@@ -13,7 +13,7 @@ const generateJwtDriver = async (id = ''): Promise<string | null> => {
     }
 
     const token = jwt.sign(payload, process.env.SECRETORPRIVATEKEY, {
-      expiresIn: '7d',
+      expiresIn: '60d',
     });
     return token;
   } catch (error) {
