@@ -11,6 +11,9 @@ const prisma = new PrismaClient
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 
+const TEST_PHONE = 6505551234; // sin +1
+const TEST_CODE = '99999';
+
 const encryptData = (data: string | number) => {
     return CryptoJS.AES.encrypt(data.toString(), process.env.secretKeyCrypto!).toString();
 };
@@ -39,7 +42,7 @@ const generateDigitCode = (): string => {
 
 const validationCodePostService = async ({ phoneNumber }: phoneNumberProps) => {
     try {
-        const code = generateDigitCode();
+        const code = phoneNumber === TEST_PHONE ? TEST_CODE : generateDigitCode();
         const codeSecurityGenerated = uuidv4();
         const encryptedPhone = encryptData(phoneNumber.toString());
         const encryptedSearchPhone = encryptPhone(phoneNumber.toString());
@@ -48,15 +51,17 @@ const validationCodePostService = async ({ phoneNumber }: phoneNumberProps) => {
             where: { hashValitadionPhone: encryptedSearchPhone },
         });
 
-        try {
-            await client.messages.create({
-                body: `Hola, usa este código para continuar en Puntoride: ${code}. ¡Gracias por elegirnos!`,
-                to: `+58${phoneNumber}`,
-                from: '+18587805265',
-            });
-        } catch (twilioError) {
-            console.error("Error enviando SMS:", twilioError);
-            throw new Error("Error al enviar el código de validación.");
+        if (phoneNumber !== TEST_PHONE) {
+            try {
+                await client.messages.create({
+                    body: `Hola, usa este código para continuar en Puntoride: ${code}. ¡Gracias por elegirnos!`,
+                    to: `+58${phoneNumber}`,
+                    from: '+18587805265',
+                });
+            } catch (twilioError) {
+                console.error("Error enviando SMS:", twilioError);
+                throw new Error("Error al enviar el código de validación.");
+            }
         }
 
         const validationCodeResponseService = await prisma.validationCodeSMS.create({
