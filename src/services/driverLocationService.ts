@@ -71,7 +71,7 @@ const driverLocationPostService = async (
       polylineType: activeTrip.tripStarted ? "FINAL" : "TEMP",
       positionDriverEvent: { latitude, longitude },
     };
-    io.to(activeTrip.usersClientId).emit("driver_route_accepted", payload);
+    io.to(activeTrip.usersClientId).emit("driver_position_update", payload);
     io.to(uid).emit("client_route_accepted", payload);
 
     console.log(`📡 Posición emitida a cliente ${activeTrip.usersClientId}`);
